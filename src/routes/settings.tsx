@@ -1,0 +1,112 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
+import { AppLayout } from "@/components/AppLayout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { defaultSettings, exportAll, importAll, loadSettings, saveSettings, type AppSettings } from "@/lib/storage";
+import { Download, Upload } from "lucide-react";
+import { toast } from "sonner";
+
+export const Route = createFileRoute("/settings")({
+  head: () => ({ meta: [{ title: "Settings — Rose & Paw" }] }),
+  component: SettingsPage,
+});
+
+const TONES = ["Friendly", "Professional", "Fun", "Warm", "Boutique", "Local and personal", "Simple and direct"];
+
+function SettingsPage() {
+  const [s, setS] = useState<AppSettings>(defaultSettings);
+  const [loaded, setLoaded] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { setS(loadSettings()); setLoaded(true); }, []);
+
+  function save() {
+    saveSettings(s);
+    toast.success("Settings saved.");
+  }
+
+  function doExport() {
+    const json = exportAll();
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `rose-paw-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Backup downloaded.");
+  }
+
+  async function doImport(file: File) {
+    const text = await file.text();
+    if (!confirm("Importing will overwrite your current profile, kits, and settings on this device. Continue?")) return;
+    const res = importAll(text);
+    if (!res.ok) { toast.error(`Import failed: ${res.error}`); return; }
+    toast.success("Data imported.");
+    setS(loadSettings());
+  }
+
+  if (!loaded) return <AppLayout><div className="h-96" /></AppLayout>;
+
+  return (
+    <AppLayout>
+      <div className="space-y-6">
+        <header>
+          <p className="text-sm font-medium uppercase tracking-wider text-accent">Settings</p>
+          <h1 className="mt-1 font-display text-3xl sm:text-4xl font-semibold">App settings</h1>
+        </header>
+
+        <section className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-card space-y-4">
+          <h2 className="font-display text-xl font-semibold">Defaults</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>Agency name</Label>
+              <Input value={s.agencyName} onChange={(e) => setS({ ...s, agencyName: e.target.value })} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Default brand tone</Label>
+              <Select value={s.defaultBrandTone} onValueChange={(v) => setS({ ...s, defaultBrandTone: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{TONES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>Default city or service area</Label>
+              <Input value={s.defaultServiceArea} onChange={(e) => setS({ ...s, defaultServiceArea: e.target.value })} />
+            </div>
+          </div>
+          <div className="flex items-center justify-between rounded-xl border border-border bg-muted/40 p-4">
+            <div>
+              <div className="font-medium">Show Rose &amp; Paw service CTA</div>
+              <div className="text-sm text-muted-foreground">A small callout at the bottom of generated kits.</div>
+            </div>
+            <Switch checked={s.showServiceCta} onCheckedChange={(v) => setS({ ...s, showServiceCta: v })} />
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={save}>Save settings</Button>
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-card space-y-4">
+          <h2 className="font-display text-xl font-semibold">Backup &amp; restore</h2>
+          <p className="text-sm text-muted-foreground">Export includes your business profile, uploaded logo, saved promo kits, and app settings. Import will validate the file before overwriting your data.</p>
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={doExport} variant="outline" className="gap-2"><Download className="size-4" /> Export all data (JSON)</Button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="application/json,.json"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) doImport(f); if (fileRef.current) fileRef.current.value = ""; }}
+            />
+            <Button onClick={() => fileRef.current?.click()} variant="outline" className="gap-2"><Upload className="size-4" /> Import from JSON</Button>
+          </div>
+        </section>
+      </div>
+    </AppLayout>
+  );
+}
