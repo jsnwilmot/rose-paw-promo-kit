@@ -1,5 +1,13 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Store, Sparkles, FolderHeart, Settings as SettingsIcon, Menu, X } from "lucide-react";
+import {
+  LayoutDashboard,
+  Store,
+  Sparkles,
+  FolderHeart,
+  Settings as SettingsIcon,
+  Menu,
+  X,
+} from "lucide-react";
 import { useState, type ReactNode } from "react";
 import logoAsset from "@/assets/rose-paw-logo.png.asset.json";
 import { Toaster } from "@/components/ui/sonner";
@@ -85,7 +93,11 @@ export function AppLayout({ children }: { children?: ReactNode }) {
           >
             <div className="flex items-center justify-between">
               <Brand small />
-              <button onClick={() => setOpen(false)} className="rounded-lg p-2 hover:bg-muted" aria-label="Close menu">
+              <button
+                onClick={() => setOpen(false)}
+                className="rounded-lg p-2 hover:bg-muted"
+                aria-label="Close menu"
+              >
                 <X className="size-5" />
               </button>
             </div>

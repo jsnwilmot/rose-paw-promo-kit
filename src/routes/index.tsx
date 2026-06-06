@@ -2,14 +2,31 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, CheckCircle2, Circle, Sparkles, Image as ImageIcon, ClipboardList } from "lucide-react";
-import { isProfileComplete, loadKits, loadProfile, type BusinessProfile, type PromoKit } from "@/lib/storage";
+import {
+  ArrowRight,
+  CheckCircle2,
+  Circle,
+  Sparkles,
+  Image as ImageIcon,
+  ClipboardList,
+} from "lucide-react";
+import {
+  isProfileComplete,
+  loadKits,
+  loadProfile,
+  type BusinessProfile,
+  type PromoKit,
+} from "@/lib/storage";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Dashboard — Rose & Paw" },
-      { name: "description", content: "Your Rose & Paw dashboard. Create promo kits, track recent campaigns, and check your business profile." },
+      {
+        name: "description",
+        content:
+          "Your Rose & Paw dashboard. Create promo kits, track recent campaigns, and check your business profile.",
+      },
     ],
   }),
   component: Dashboard,
@@ -38,14 +55,17 @@ function Dashboard() {
   const totalCount = completion ? Object.values(completion).length : 6;
   const profilePct = Math.round((completedCount / totalCount) * 100);
 
-  const suggestion =
-    !profile?.businessName
-      ? { text: "Start by filling in your Business Profile.", to: "/profile", cta: "Set up profile" }
-      : !profile?.logoDataUrl
+  const suggestion = !profile?.businessName
+    ? { text: "Start by filling in your Business Profile.", to: "/profile", cta: "Set up profile" }
+    : !profile?.logoDataUrl
       ? { text: "Add your logo so it appears on your kits.", to: "/profile", cta: "Upload logo" }
       : kits.length === 0
-      ? { text: "Create your first promo kit in under 2 minutes.", to: "/create", cta: "Create promo kit" }
-      : { text: "Plan a new campaign for this week.", to: "/create", cta: "New promo kit" };
+        ? {
+            text: "Create your first promo kit in under 2 minutes.",
+            to: "/create",
+            cta: "Create promo kit",
+          }
+        : { text: "Plan a new campaign for this week.", to: "/create", cta: "New promo kit" };
 
   return (
     <AppLayout>
@@ -56,7 +76,8 @@ function Dashboard() {
             Welcome{profile?.businessName ? `, ${profile.businessName}` : ""} 👋
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Build a complete local promo kit from one short form — posts, flyer copy, ad copy, review requests, and a 7-day plan.
+            Build a complete local promo kit from one short form — posts, flyer copy, ad copy,
+            review requests, and a 7-day plan.
           </p>
         </header>
 
@@ -105,7 +126,9 @@ function Dashboard() {
                   ) : (
                     <Circle className="size-4 text-muted-foreground/40" />
                   )}
-                  <span className={done ? "text-foreground" : "text-muted-foreground"}>{label}</span>
+                  <span className={done ? "text-foreground" : "text-muted-foreground"}>
+                    {label}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -118,16 +141,31 @@ function Dashboard() {
             <h3 className="font-display text-lg font-semibold mb-3">How this works</h3>
             <ol className="space-y-3 text-sm">
               <li className="flex gap-3">
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent font-semibold">1</span>
-                <span><strong className="text-foreground">Fill in your business profile</strong> once — name, services, colours, logo.</span>
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent font-semibold">
+                  1
+                </span>
+                <span>
+                  <strong className="text-foreground">Fill in your business profile</strong> once —
+                  name, services, colours, logo.
+                </span>
               </li>
               <li className="flex gap-3">
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent font-semibold">2</span>
-                <span><strong className="text-foreground">Tell us about a campaign</strong> — the offer, dates, and tone.</span>
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent font-semibold">
+                  2
+                </span>
+                <span>
+                  <strong className="text-foreground">Tell us about a campaign</strong> — the offer,
+                  dates, and tone.
+                </span>
               </li>
               <li className="flex gap-3">
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent font-semibold">3</span>
-                <span><strong className="text-foreground">Get a full promo kit</strong> — copy, captions, flyer, ad, plan, and image prompts.</span>
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent font-semibold">
+                  3
+                </span>
+                <span>
+                  <strong className="text-foreground">Get a full promo kit</strong> — copy,
+                  captions, flyer, ad, plan, and image prompts.
+                </span>
               </li>
             </ol>
           </div>
@@ -162,7 +200,9 @@ function Dashboard() {
                     </div>
                   </div>
                   <Button asChild size="sm" variant="outline">
-                    <Link to="/kit/$id" params={{ id: k.id }}>Open</Link>
+                    <Link to="/kit/$id" params={{ id: k.id }}>
+                      Open
+                    </Link>
                   </Button>
                 </li>
               ))}
@@ -176,7 +216,11 @@ function Dashboard() {
             <span>Your logo is uploaded and ready to appear on new kits.</span>
           ) : (
             <span>
-              No logo uploaded yet. <Link to="/profile" className="underline font-medium text-foreground">Add one</Link> to brand your kits automatically.
+              No logo uploaded yet.{" "}
+              <Link to="/profile" className="underline font-medium text-foreground">
+                Add one
+              </Link>{" "}
+              to brand your kits automatically.
             </span>
           )}
         </div>

@@ -1,3 +1,8 @@
+import { z } from "zod";
+
+export const STORAGE_SCHEMA_VERSION = 2;
+export const EXPORT_VERSION = 2;
+
 export type BusinessProfile = {
   businessName: string;
   businessType: string;
@@ -84,6 +89,23 @@ export type AppSettings = {
   showServiceCta: boolean;
 };
 
+export type StorageResult = { ok: true } | { ok: false; error: string; quotaExceeded?: boolean };
+export type ImportPreview = {
+  businessName: string;
+  promoKitCount: number;
+  includesLogo: boolean;
+  exportedAt: string;
+  schemaVersion: number;
+  exportVersion: number;
+};
+
+export type ValidatedImport = {
+  preview: ImportPreview;
+  businessProfile: BusinessProfile;
+  promoKits: PromoKit[];
+  appSettings: AppSettings;
+};
+
 const KEYS = {
   profile: "rp.businessProfile",
   kits: "rp.promoKits",
@@ -97,7 +119,7 @@ export const emptyProfile: BusinessProfile = {
   businessDescription: "",
   mainServices: "",
   targetCustomer: "",
-  brandTone: "Friendly",
+  brandTone: "",
   websiteLink: "",
   facebookLink: "",
   instagramLink: "",
@@ -118,8 +140,193 @@ export const defaultSettings: AppSettings = {
   showServiceCta: true,
 };
 
+const isoDateTime = z.string().datetime({ offset: true });
+const optionalIsoDateTime = z.union([z.literal(""), isoDateTime]);
+const formDate = z.union([
+  z.literal(""),
+  z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "must use YYYY-MM-DD"),
+]);
+const colour = z.string().regex(/^#[0-9a-fA-F]{6}$/, "must be a 6-digit hex colour");
+const logoDataUrl = z.union([
+  z.literal(""),
+  z.string().regex(/^data:image\/(png|jpeg|webp);base64,/i, "must be a PNG, JPG, or WEBP data URL"),
+]);
+const nonEmpty = z.string().trim().min(1);
+const labelledTextSchema = z.object({ label: nonEmpty, text: nonEmpty });
+
+const businessProfileSchema = z.object({
+  businessName: z.string(),
+  businessType: z.string(),
+  serviceArea: z.string(),
+  businessDescription: z.string(),
+  mainServices: z.string(),
+  targetCustomer: z.string(),
+  brandTone: z.string(),
+  websiteLink: z.string(),
+  facebookLink: z.string(),
+  instagramLink: z.string(),
+  googleBusinessProfileLink: z.string(),
+  contactMethod: z.string(),
+  mainBrandColour: colour,
+  secondaryBrandColour: colour,
+  logoDataUrl,
+  logoFileName: z.string(),
+  logoMimeType: z.union([
+    z.literal(""),
+    z.literal("image/png"),
+    z.literal("image/jpeg"),
+    z.literal("image/jpg"),
+    z.literal("image/webp"),
+  ]),
+  logoUploadedAt: optionalIsoDateTime,
+});
+
+const promoFormInputsSchema = z
+  .object({
+    campaignName: nonEmpty,
+    campaignGoal: nonEmpty,
+    businessType: z.string(),
+    featuredService: z.string(),
+    offer: z.string(),
+    startDate: formDate,
+    endDate: formDate,
+    targetCustomer: z.string(),
+    mainBenefit: z.string(),
+    location: z.string(),
+    tone: z.string(),
+    callToAction: z.string(),
+    extraNotes: z.string(),
+    useLogo: z.boolean(),
+  })
+  .refine((value) => !value.startDate || !value.endDate || value.endDate >= value.startDate, {
+    message: "end date cannot be before start date",
+    path: ["endDate"],
+  });
+
+const generatedSectionsSchema = z.object({
+  summary: z.object({
+    campaignName: nonEmpty,
+    goal: nonEmpty,
+    audience: nonEmpty,
+    offer: nonEmpty,
+    dates: nonEmpty,
+    recommendedCta: nonEmpty,
+  }),
+  facebookPosts: z.array(labelledTextSchema).min(1),
+  instagramCaptions: z.array(labelledTextSchema).min(1),
+  googlePosts: z.array(labelledTextSchema).min(1),
+  flyer: z.object({
+    headline: nonEmpty,
+    subheadline: nonEmpty,
+    bullets: z.array(nonEmpty).min(1),
+    cta: nonEmpty,
+    contact: nonEmpty,
+  }),
+  reviewRequests: z.array(labelledTextSchema).min(1),
+  websiteCopy: z.object({ headline: nonEmpty, paragraph: nonEmpty, button: nonEmpty }),
+  adCopy: z.object({
+    headline: nonEmpty,
+    primary: nonEmpty,
+    description: nonEmpty,
+    ctaButton: nonEmpty,
+  }),
+  imagePrompts: z.array(nonEmpty).min(1),
+  postingPlan: z
+    .array(z.object({ day: nonEmpty, platform: nonEmpty, type: nonEmpty, topic: nonEmpty }))
+    .min(1),
+});
+
+const promoKitSchema = z.object({
+  id: z.string().uuid(),
+  createdAt: isoDateTime,
+  updatedAt: isoDateTime,
+  campaignName: nonEmpty,
+  campaignGoal: nonEmpty,
+  businessName: z.string(),
+  businessType: z.string(),
+  formInputs: promoFormInputsSchema,
+  generatedSections: generatedSectionsSchema,
+  useLogo: z.boolean(),
+  logoSnapshotDataUrl: logoDataUrl.default(""),
+  logoSnapshotFileName: z.string().default(""),
+});
+
+const appSettingsSchema = z.object({
+  agencyName: nonEmpty,
+  defaultBrandTone: nonEmpty,
+  defaultServiceArea: z.string(),
+  showServiceCta: z.boolean(),
+});
+
+const importSchema = z.object({
+  schemaVersion: z.number().int(),
+  exportVersion: z.number().int(),
+  exportedAt: isoDateTime,
+  businessProfile: businessProfileSchema,
+  promoKits: z.array(promoKitSchema),
+  appSettings: appSettingsSchema,
+});
+
 function isBrowser() {
   return typeof window !== "undefined";
+}
+
+function storageFailure(error: unknown): StorageResult {
+  const quotaExceeded =
+    error instanceof DOMException &&
+    (error.name === "QuotaExceededError" || error.name === "NS_ERROR_DOM_QUOTA_REACHED");
+  return {
+    ok: false,
+    quotaExceeded,
+    error: quotaExceeded
+      ? "This device's local storage is full. Remove an old kit or use a smaller logo, then try again."
+      : "The app could not save data on this device. Your previous saved data is unchanged.",
+  };
+}
+
+function write(key: string, value: unknown): StorageResult {
+  if (!isBrowser()) return { ok: true };
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+    return { ok: true };
+  } catch (error) {
+    return storageFailure(error);
+  }
+}
+
+function validationMessage(error: z.ZodError) {
+  return error.issues
+    .slice(0, 5)
+    .map((issue) => `${issue.path.join(".") || "file"}: ${issue.message}`)
+    .join("; ");
+}
+
+function stripLegacySvgLogo(value: unknown) {
+  if (!value || typeof value !== "object") return value;
+  const record = { ...(value as Record<string, unknown>) };
+  if (
+    record.logoMimeType === "image/svg+xml" ||
+    (typeof record.logoDataUrl === "string" && record.logoDataUrl.startsWith("data:image/svg+xml"))
+  ) {
+    record.logoDataUrl = "";
+    record.logoFileName = "";
+    record.logoMimeType = "";
+    record.logoUploadedAt = "";
+  }
+  return record;
+}
+
+function stripLegacyKitSvgLogo(value: unknown) {
+  if (!value || typeof value !== "object") return value;
+  const record = { ...(value as Record<string, unknown>) };
+  if (
+    typeof record.logoSnapshotDataUrl === "string" &&
+    record.logoSnapshotDataUrl.startsWith("data:image/svg+xml")
+  ) {
+    record.logoSnapshotDataUrl = "";
+    record.logoSnapshotFileName = "";
+  }
+  return record;
 }
 
 export function loadProfile(): BusinessProfile {
@@ -127,16 +334,23 @@ export function loadProfile(): BusinessProfile {
   try {
     const raw = localStorage.getItem(KEYS.profile);
     if (!raw) return emptyProfile;
-    return { ...emptyProfile, ...JSON.parse(raw) };
+    const sanitized = stripLegacySvgLogo(JSON.parse(raw));
+    const result = businessProfileSchema.safeParse({
+      ...emptyProfile,
+      ...(sanitized && typeof sanitized === "object" ? sanitized : {}),
+    });
+    return result.success ? result.data : emptyProfile;
   } catch {
     return emptyProfile;
   }
 }
 
-export function saveProfile(profile: BusinessProfile) {
-  if (!isBrowser()) return;
-  localStorage.setItem(KEYS.profile, JSON.stringify(profile));
-  window.dispatchEvent(new Event("rp:profile-changed"));
+export function saveProfile(profile: BusinessProfile): StorageResult {
+  const validated = businessProfileSchema.safeParse(profile);
+  if (!validated.success) return { ok: false, error: validationMessage(validated.error) };
+  const result = write(KEYS.profile, validated.data);
+  if (result.ok && isBrowser()) window.dispatchEvent(new Event("rp:profile-changed"));
+  return result;
 }
 
 export function loadKits(): PromoKit[] {
@@ -145,32 +359,37 @@ export function loadKits(): PromoKit[] {
     const raw = localStorage.getItem(KEYS.kits);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    const result = z
+      .array(promoKitSchema)
+      .safeParse(Array.isArray(parsed) ? parsed.map(stripLegacyKitSvgLogo) : parsed);
+    return result.success ? result.data : [];
   } catch {
     return [];
   }
 }
 
-export function saveKits(kits: PromoKit[]) {
-  if (!isBrowser()) return;
-  localStorage.setItem(KEYS.kits, JSON.stringify(kits));
-  window.dispatchEvent(new Event("rp:kits-changed"));
+export function saveKits(kits: PromoKit[]): StorageResult {
+  const validated = z.array(promoKitSchema).safeParse(kits);
+  if (!validated.success) return { ok: false, error: validationMessage(validated.error) };
+  const result = write(KEYS.kits, validated.data);
+  if (result.ok && isBrowser()) window.dispatchEvent(new Event("rp:kits-changed"));
+  return result;
 }
 
-export function upsertKit(kit: PromoKit) {
+export function upsertKit(kit: PromoKit): StorageResult {
   const kits = loadKits();
-  const idx = kits.findIndex((k) => k.id === kit.id);
+  const idx = kits.findIndex((candidate) => candidate.id === kit.id);
   if (idx >= 0) kits[idx] = kit;
   else kits.unshift(kit);
-  saveKits(kits);
+  return saveKits(kits);
 }
 
-export function deleteKit(id: string) {
-  saveKits(loadKits().filter((k) => k.id !== id));
+export function deleteKit(id: string): StorageResult {
+  return saveKits(loadKits().filter((kit) => kit.id !== id));
 }
 
 export function getKit(id: string): PromoKit | undefined {
-  return loadKits().find((k) => k.id === id);
+  return loadKits().find((kit) => kit.id === id);
 }
 
 export function loadSettings(): AppSettings {
@@ -178,86 +397,156 @@ export function loadSettings(): AppSettings {
   try {
     const raw = localStorage.getItem(KEYS.settings);
     if (!raw) return defaultSettings;
-    return { ...defaultSettings, ...JSON.parse(raw) };
+    const result = appSettingsSchema.safeParse({ ...defaultSettings, ...JSON.parse(raw) });
+    return result.success ? result.data : defaultSettings;
   } catch {
     return defaultSettings;
   }
 }
 
-export function saveSettings(settings: AppSettings) {
-  if (!isBrowser()) return;
-  localStorage.setItem(KEYS.settings, JSON.stringify(settings));
-  window.dispatchEvent(new Event("rp:settings-changed"));
+export function saveSettings(settings: AppSettings): StorageResult {
+  const validated = appSettingsSchema.safeParse(settings);
+  if (!validated.success) return { ok: false, error: validationMessage(validated.error) };
+  const result = write(KEYS.settings, validated.data);
+  if (result.ok && isBrowser()) window.dispatchEvent(new Event("rp:settings-changed"));
+  return result;
 }
 
 export function exportAll(): string {
   return JSON.stringify(
     {
-      version: 1,
+      schemaVersion: STORAGE_SCHEMA_VERSION,
+      exportVersion: EXPORT_VERSION,
       exportedAt: new Date().toISOString(),
       businessProfile: loadProfile(),
       promoKits: loadKits(),
       appSettings: loadSettings(),
     },
     null,
-    2
+    2,
   );
 }
 
-export function importAll(jsonString: string): { ok: boolean; error?: string } {
+export function validateImport(
+  jsonString: string,
+): { ok: true; data: ValidatedImport } | { ok: false; error: string } {
+  let parsed: unknown;
   try {
-    const data = JSON.parse(jsonString);
-    if (!data || typeof data !== "object") return { ok: false, error: "Invalid file" };
-    if (data.businessProfile) saveProfile({ ...emptyProfile, ...data.businessProfile });
-    if (Array.isArray(data.promoKits)) saveKits(data.promoKits);
-    if (data.appSettings) saveSettings({ ...defaultSettings, ...data.appSettings });
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, error: (e as Error).message };
+    parsed = JSON.parse(jsonString);
+  } catch {
+    return { ok: false, error: "The selected file is not valid JSON." };
   }
-}
 
-export function isProfileComplete(p: BusinessProfile) {
+  const versioned = parsed as { schemaVersion?: unknown; exportVersion?: unknown };
+  if (
+    versioned?.schemaVersion !== STORAGE_SCHEMA_VERSION ||
+    versioned?.exportVersion !== EXPORT_VERSION
+  ) {
+    return {
+      ok: false,
+      error: `Unsupported backup version. Expected schemaVersion ${STORAGE_SCHEMA_VERSION} and exportVersion ${EXPORT_VERSION}.`,
+    };
+  }
+
+  const result = importSchema.safeParse(parsed);
+  if (!result.success) return { ok: false, error: validationMessage(result.error) };
+  const data = result.data;
   return {
-    businessName: !!p.businessName,
-    businessType: !!p.businessType,
-    serviceArea: !!p.serviceArea,
-    mainServices: !!p.mainServices,
-    brandColours: !!p.mainBrandColour && !!p.secondaryBrandColour,
-    logoUploaded: !!p.logoDataUrl,
+    ok: true,
+    data: {
+      businessProfile: data.businessProfile,
+      promoKits: data.promoKits,
+      appSettings: data.appSettings,
+      preview: {
+        businessName: data.businessProfile.businessName || "Unnamed business",
+        promoKitCount: data.promoKits.length,
+        includesLogo: !!data.businessProfile.logoDataUrl,
+        exportedAt: data.exportedAt,
+        schemaVersion: data.schemaVersion,
+        exportVersion: data.exportVersion,
+      },
+    },
   };
 }
 
-/** Compress raster images via canvas, return data URL. SVG returned as-is. */
-export async function fileToDataUrl(file: File, maxDim = 800): Promise<string> {
-  if (file.type === "image/svg+xml") {
-    return new Promise((res, rej) => {
-      const r = new FileReader();
-      r.onload = () => res(r.result as string);
-      r.onerror = () => rej(r.error);
-      r.readAsDataURL(file);
-    });
+export function importValidated(data: ValidatedImport): StorageResult {
+  if (!isBrowser()) return { ok: false, error: "Import is only available in the browser." };
+  const previous = {
+    profile: localStorage.getItem(KEYS.profile),
+    kits: localStorage.getItem(KEYS.kits),
+    settings: localStorage.getItem(KEYS.settings),
+  };
+
+  try {
+    localStorage.setItem(KEYS.profile, JSON.stringify(data.businessProfile));
+    localStorage.setItem(KEYS.kits, JSON.stringify(data.promoKits));
+    localStorage.setItem(KEYS.settings, JSON.stringify(data.appSettings));
+  } catch (error) {
+    try {
+      for (const [key, value] of [
+        [KEYS.profile, previous.profile],
+        [KEYS.kits, previous.kits],
+        [KEYS.settings, previous.settings],
+      ] as const) {
+        if (value === null) localStorage.removeItem(key);
+        else localStorage.setItem(key, value);
+      }
+    } catch {
+      return {
+        ok: false,
+        error: "Import failed and the browser could not fully restore the previous local data.",
+      };
+    }
+    return storageFailure(error);
   }
-  const dataUrl: string = await new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(r.result as string);
-    r.onerror = () => rej(r.error);
-    r.readAsDataURL(file);
+
+  window.dispatchEvent(new Event("rp:profile-changed"));
+  window.dispatchEvent(new Event("rp:kits-changed"));
+  window.dispatchEvent(new Event("rp:settings-changed"));
+  return { ok: true };
+}
+
+export function isProfileComplete(profile: BusinessProfile) {
+  return {
+    businessName: !!profile.businessName,
+    businessType: !!profile.businessType,
+    serviceArea: !!profile.serviceArea,
+    mainServices: !!profile.mainServices,
+    brandColours: !!profile.mainBrandColour && !!profile.secondaryBrandColour,
+    logoUploaded: !!profile.logoDataUrl,
+  };
+}
+
+/** Resize raster images before storing them locally. SVG is intentionally unsupported. */
+export async function fileToDataUrl(file: File, maxDim = 800): Promise<string> {
+  if (!["image/png", "image/jpeg", "image/jpg", "image/webp"].includes(file.type)) {
+    throw new Error("Unsupported logo format");
+  }
+  const dataUrl: string = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
   });
-  const img = new Image();
-  img.src = dataUrl;
-  await new Promise((res, rej) => {
-    img.onload = res;
-    img.onerror = rej;
+  const image = new Image();
+  image.src = dataUrl;
+  await new Promise((resolve, reject) => {
+    image.onload = resolve;
+    image.onerror = reject;
   });
-  const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-  const w = Math.round(img.width * scale);
-  const h = Math.round(img.height * scale);
+  const scale = Math.min(1, maxDim / Math.max(image.width, image.height));
   const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return dataUrl;
-  ctx.drawImage(img, 0, 0, w, h);
-  return canvas.toDataURL(file.type === "image/png" ? "image/png" : "image/jpeg", 0.9);
+  canvas.width = Math.max(1, Math.round(image.width * scale));
+  canvas.height = Math.max(1, Math.round(image.height * scale));
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Image processing is unavailable");
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL(
+    file.type === "image/png"
+      ? "image/png"
+      : file.type === "image/webp"
+        ? "image/webp"
+        : "image/jpeg",
+    0.88,
+  );
 }
