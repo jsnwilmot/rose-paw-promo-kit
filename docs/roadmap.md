@@ -8,6 +8,8 @@
   html2canvas export.
 - **Client-shareable kit links:** add when the product moves beyond localStorage and needs secure
   cloud-backed sharing.
+- **Hosted design-request tracking:** add only after the Web3Forms request workflow proves demand
+  during MVP validation.
 
 ## Medium priority
 

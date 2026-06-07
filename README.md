@@ -7,13 +7,21 @@ and can be marked Draft, Active, or Completed. Saved-kit deletion includes a sho
 
 ## Privacy and local storage
 
-Business profiles, uploaded logos, settings, generated kits, and design-help request drafts stay in the browser's LocalStorage on the current device. The production app does not send runtime errors or app data to Lovable.
+Business profiles, uploaded logos, settings, and generated kits stay in the browser's LocalStorage on the current device. The production app does not send runtime errors or app data to Lovable.
 
 Clearing browser data, using private browsing, changing browsers, or changing devices can remove or hide saved data. Export a backup regularly.
 
 ## Backup and import
 
 Settings includes a versioned JSON export and import workflow. Imports are validated and previewed before overwrite, but importing still replaces the current profile, kits, and settings on that device. Keep a recent export before importing another file.
+
+## Design help requests
+
+The generated-kit page can build and submit a design help request to Rose & Paw Digital Designs
+through Web3Forms. Nothing is sent until the user completes the consent checkbox and submits the
+form. The request includes the editable message plus clean business profile, brand, and selected-kit
+context. Raw base64 logo data is excluded. Users can also copy the message or download the clean
+request package as JSON.
 
 ## Development
 
@@ -34,7 +42,8 @@ Use `npm run preview` to serve a production build locally.
 - Browser LocalStorage quotas vary. Large collections of kits or logos can exhaust available space.
 - Logos are limited to PNG, JPG, and WEBP files up to 2 MB and are resized before storage. SVG upload is disabled.
 - Generated copy is template-based and should be reviewed for accuracy, offer terms, and local advertising requirements.
-- Design-help requests stay local and must be copied into an email or messaging app.
+- Design-help submission requires an internet connection; copy and JSON download remain available
+  as fallbacks.
 
 See [docs/roadmap.md](docs/roadmap.md) for intentionally deferred product improvements and
 [docs/release-notes.md](docs/release-notes.md) for recent changes.

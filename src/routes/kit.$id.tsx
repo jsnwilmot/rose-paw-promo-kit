@@ -6,16 +6,8 @@ import { CopyButton } from "@/components/CopyButton";
 import { SectionCard } from "@/components/SectionCard";
 import { BrandHeader } from "@/components/BrandHeader";
 import { DeleteKitDialog, RenameKitDialog } from "@/components/KitActionDialogs";
+import { DesignHelpRequestDialog } from "@/components/DesignHelpRequestDialog";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -370,11 +362,10 @@ function KitPage() {
         {settings?.showServiceCta && (
           <div className="no-print rounded-2xl border border-accent/20 bg-accent/10 p-5 text-sm flex flex-col sm:flex-row sm:items-center gap-3">
             <div className="flex-1">
-              Need help turning this into branded graphics, flyers, or social media posts?{" "}
-              <strong>{settings.agencyName}</strong> can help create the finished marketing
-              materials.
+              Need help turning this kit into branded graphics, flyers, or social media posts?
+              Create a design request package you can send to Rose &amp; Paw Digital Designs.
             </div>
-            <DesignHelpDialog kit={kit} agencyName={settings.agencyName} />
+            <DesignHelpRequestDialog currentKit={kit} profile={profile} settings={settings} />
           </div>
         )}
 
@@ -390,46 +381,6 @@ function KitPage() {
         />
       </div>
     </AppLayout>
-  );
-}
-
-function DesignHelpDialog({ kit, agencyName }: { kit: PromoKit; agencyName: string }) {
-  const recommendedServices = [
-    "Branded social media graphics",
-    "Print-ready flyer design",
-    kit.campaignGoal === "Get more bookings"
-      ? "Booking-focused campaign graphics"
-      : "Campaign creative direction",
-  ];
-  const message = `Hi ${agencyName},
-
-I'd like design help with my "${kit.campaignName}" promo kit.
-
-Business: ${kit.businessName || "Not provided"}
-Campaign goal: ${kit.campaignGoal}
-Offer: ${kit.formInputs.offer || "Not provided"}
-Recommended services: ${recommendedServices.join(", ")}
-
-Please let me know what you recommend and what you need from me.`;
-
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="default" size="sm">
-          Request Design Help
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Request design help</DialogTitle>
-          <DialogDescription>
-            This request stays on your device. Copy it into your preferred email or message app.
-          </DialogDescription>
-        </DialogHeader>
-        <Textarea aria-label="Design help request message" value={message} readOnly rows={14} />
-        <CopyButton text={message} label="Copy request message" />
-      </DialogContent>
-    </Dialog>
   );
 }
 
