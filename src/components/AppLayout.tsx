@@ -8,7 +8,6 @@ import {
   Menu,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
-import logoAsset from "@/assets/rose-paw-logo.png.asset.json";
 import { Toaster } from "@/components/ui/sonner";
 import {
   Sheet,
@@ -55,13 +54,15 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
 
 function Brand({ small = false }: { small?: boolean }) {
   return (
-    <Link to="/" className="flex items-center gap-3">
+    <Link to="/" className="flex min-w-0 items-center gap-3">
       <img
-        src={logoAsset.url}
+        src="/rose-paw-logo.png"
         alt="Rose & Paw Digital Designs"
-        className={small ? "h-10 w-10 object-contain" : "h-14 w-14 object-contain"}
+        className={
+          small ? "h-12 w-14 shrink-0 object-contain" : "h-20 w-24 shrink-0 object-contain"
+        }
       />
-      <div className="leading-tight">
+      <div className="min-w-0 leading-tight">
         <div className="font-display text-lg font-semibold text-primary">Rose &amp; Paw</div>
         <div className="text-xs text-muted-foreground">Local marketing made simple.</div>
       </div>
