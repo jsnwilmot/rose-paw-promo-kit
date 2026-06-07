@@ -2,6 +2,17 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -87,12 +98,6 @@ function SettingsPage() {
 
   function confirmImport() {
     if (!pendingImport) return;
-    if (
-      !confirm(
-        "Importing will overwrite your current profile, kits, and settings on this device. Continue?",
-      )
-    )
-      return;
     const res = importValidated(pendingImport);
     if (!res.ok) {
       toast.error(`Import failed: ${res.error}`);
@@ -245,7 +250,24 @@ function SettingsPage() {
               <p className="text-sm text-destructive">
                 Continuing will overwrite all current local data on this device.
               </p>
-              <Button onClick={confirmImport}>Import and overwrite</Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button>Import and overwrite</Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Overwrite local app data?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Importing will replace your current profile, saved kits, and settings on this
+                      device.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={confirmImport}>Import backup</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           )}
         </section>

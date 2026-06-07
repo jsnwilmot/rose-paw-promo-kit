@@ -1,9 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
+import { DeleteKitDialog, RenameKitDialog } from "@/components/KitActionDialogs";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { deleteKit, loadKits, loadProfile, upsertKit, type PromoKit } from "@/lib/storage";
+import { duplicateKitById, renameKitById } from "@/lib/kit-actions";
+import {
+  deleteKit,
+  emptyProfile,
+  loadKits,
+  loadProfile,
+  upsertKit,
+  type BusinessProfile,
+  type PromoKit,
+} from "@/lib/storage";
 import { FolderHeart, Pencil, Files, Trash2, Sparkles, Search } from "lucide-react";
 import { toast } from "sonner";
 
@@ -20,10 +31,13 @@ export const Route = createFileRoute("/kits")({
 function KitsPage() {
   const [kits, setKits] = useState<PromoKit[]>([]);
   const [q, setQ] = useState("");
-  const profile = loadProfile();
+  const [profile, setProfile] = useState<BusinessProfile>(emptyProfile);
+  const [renameTarget, setRenameTarget] = useState<PromoKit | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<PromoKit | null>(null);
 
   useEffect(() => {
     const refresh = () => setKits(loadKits());
+    setProfile(loadProfile());
     refresh();
     window.addEventListener("rp:kits-changed", refresh);
     return () => window.removeEventListener("rp:kits-changed", refresh);
@@ -36,42 +50,36 @@ function KitsPage() {
       k.campaignGoal.toLowerCase().includes(q.toLowerCase()),
   );
 
-  function rename(k: PromoKit) {
-    const next = prompt("Rename this kit:", k.campaignName);
-    if (!next?.trim()) return;
-    const result = upsertKit({
-      ...k,
-      campaignName: next.trim(),
-      updatedAt: new Date().toISOString(),
-    });
-    if (!result.ok) {
-      toast.error(result.error);
-      return;
-    }
-    toast.success("Renamed.");
+  function rename(title: string) {
+    if (!renameTarget) return;
+    const updated = renameKitById(renameTarget.id, title);
+    if (!updated) return toast.error("The kit could not be renamed.");
+    setRenameTarget(null);
+    toast.success("Kit renamed.");
   }
   function duplicate(k: PromoKit) {
-    const result = upsertKit({
-      ...k,
-      id: crypto.randomUUID(),
-      campaignName: `${k.campaignName} (copy)`,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
-    if (!result.ok) {
-      toast.error(result.error);
-      return;
-    }
-    toast.success("Duplicated.");
+    if (!duplicateKitById(k.id)) return toast.error("The kit could not be duplicated.");
+    toast.success("Kit duplicated.");
   }
-  function remove(k: PromoKit) {
-    if (!confirm(`Delete "${k.campaignName}"?`)) return;
-    const result = deleteKit(k.id);
+  function remove() {
+    if (!deleteTarget) return;
+    const deleted = deleteTarget;
+    const result = deleteKit(deleted.id);
     if (!result.ok) {
       toast.error(result.error);
       return;
     }
-    toast.success("Deleted.");
+    setDeleteTarget(null);
+    toast.success("Kit deleted", {
+      action: {
+        label: "Undo",
+        onClick: () => {
+          const restored = upsertKit(deleted);
+          if (!restored.ok) return toast.error(restored.error);
+          toast.success("Kit restored.");
+        },
+      },
+    });
   }
 
   return (
@@ -142,6 +150,9 @@ function KitsPage() {
                   <div className="min-w-0 flex-1">
                     <div className="font-display text-lg truncate">{k.campaignName}</div>
                     <div className="text-xs text-muted-foreground truncate">{k.campaignGoal}</div>
+                    <Badge variant="secondary" className="mt-2 capitalize">
+                      {k.status}
+                    </Badge>
                   </div>
                 </div>
                 <div className="mt-3 text-xs text-muted-foreground">
@@ -153,7 +164,12 @@ function KitsPage() {
                       Open
                     </Link>
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => rename(k)} className="gap-1.5">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setRenameTarget(k)}
+                    className="gap-1.5"
+                  >
                     <Pencil className="size-3.5" /> Rename
                   </Button>
                   <Button
@@ -167,7 +183,7 @@ function KitsPage() {
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => remove(k)}
+                    onClick={() => setDeleteTarget(k)}
                     className="gap-1.5 text-destructive hover:text-destructive"
                   >
                     <Trash2 className="size-3.5" /> Delete
@@ -177,6 +193,16 @@ function KitsPage() {
             ))}
           </div>
         )}
+        <RenameKitDialog
+          kit={renameTarget}
+          onOpenChange={(open) => !open && setRenameTarget(null)}
+          onRename={rename}
+        />
+        <DeleteKitDialog
+          kit={deleteTarget}
+          onOpenChange={(open) => !open && setDeleteTarget(null)}
+          onDelete={remove}
+        />
       </div>
     </AppLayout>
   );

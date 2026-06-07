@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/CopyButton";
 import { SectionCard } from "@/components/SectionCard";
 import { BrandHeader } from "@/components/BrandHeader";
+import { DeleteKitDialog, RenameKitDialog } from "@/components/KitActionDialogs";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -15,15 +17,25 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { duplicateKitById, renameKitById } from "@/lib/kit-actions";
+import {
   deleteKit,
   getKit,
   loadProfile,
   loadSettings,
   upsertKit,
   type AppSettings,
+  type BusinessProfile,
+  type KitStatus,
   type PromoKit,
 } from "@/lib/storage";
-import { ArrowLeft, Copy as CopyIcon, Printer, Trash2, Pencil, Files } from "lucide-react";
+import { ArrowLeft, Printer, Trash2, Pencil, Files } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/kit/$id")({
@@ -46,21 +58,44 @@ function KitPage() {
   const navigate = useNavigate();
   const [kit, setKit] = useState<PromoKit | null>(null);
   const [settings, setSettings] = useState<AppSettings | null>(null);
+  const [profile, setProfile] = useState<BusinessProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+  const [renameTarget, setRenameTarget] = useState<PromoKit | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<PromoKit | null>(null);
 
   useEffect(() => {
     const k = getKit(id);
-    if (k) setKit(k);
+    setKit(k ?? null);
+    setNotFound(!k);
     setSettings(loadSettings());
+    setProfile(loadProfile());
+    setIsLoading(false);
   }, [id]);
 
-  if (!kit)
+  if (isLoading)
     return (
       <AppLayout>
         <div className="text-center py-12 text-muted-foreground">Loading…</div>
       </AppLayout>
     );
 
-  const profile = loadProfile();
+  if (notFound || !kit || !profile) {
+    return (
+      <AppLayout>
+        <div className="text-center py-12">
+          <h1 className="font-display text-2xl">Kit not found</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            This kit may have been deleted or the link may be incorrect.
+          </p>
+          <Button asChild className="mt-4">
+            <Link to="/kits">Back to saved kits</Link>
+          </Button>
+        </div>
+      </AppLayout>
+    );
+  }
+
   const headerProfile = {
     businessName: kit.businessName || profile.businessName,
     mainBrandColour: profile.mainBrandColour,
@@ -69,45 +104,49 @@ function KitPage() {
   const logoUrl = kit.useLogo ? kit.logoSnapshotDataUrl || profile.logoDataUrl : "";
   const g = kit.generatedSections;
 
-  function rename() {
-    const next = prompt("Rename this kit:", kit!.campaignName);
-    if (!next || !next.trim()) return;
-    const updated = { ...kit!, campaignName: next.trim(), updatedAt: new Date().toISOString() };
-    const result = upsertKit(updated);
-    if (!result.ok) {
-      toast.error(result.error);
-      return;
-    }
+  function rename(title: string) {
+    const updated = renameKitById(kit.id, title);
+    if (!updated) return toast.error("The kit could not be renamed.");
     setKit(updated);
+    setRenameTarget(null);
     toast.success("Kit renamed.");
   }
 
   function duplicate() {
-    const copy: PromoKit = {
-      ...kit!,
-      id: crypto.randomUUID(),
-      campaignName: `${kit!.campaignName} (copy)`,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    const result = upsertKit(copy);
-    if (!result.ok) {
-      toast.error(result.error);
-      return;
-    }
+    const copy = duplicateKitById(kit.id);
+    if (!copy) return toast.error("The kit could not be duplicated.");
     toast.success("Kit duplicated.");
     navigate({ to: "/kit/$id", params: { id: copy.id } });
   }
 
   function remove() {
-    if (!confirm("Delete this kit? This can't be undone.")) return;
-    const result = deleteKit(kit!.id);
+    const deleted = kit;
+    const result = deleteKit(deleted.id);
     if (!result.ok) {
       toast.error(result.error);
       return;
     }
-    toast.success("Kit deleted.");
+    setDeleteTarget(null);
     navigate({ to: "/kits" });
+    toast.success("Kit deleted", {
+      action: {
+        label: "Undo",
+        onClick: () => {
+          const restored = upsertKit(deleted);
+          if (!restored.ok) return toast.error(restored.error);
+          toast.success("Kit restored.");
+          navigate({ to: "/kit/$id", params: { id: deleted.id } });
+        },
+      },
+    });
+  }
+
+  function changeStatus(status: KitStatus) {
+    const updated = { ...kit, status, updatedAt: new Date().toISOString() };
+    const result = upsertKit(updated);
+    if (!result.ok) return toast.error(result.error);
+    setKit(updated);
+    toast.success(`Kit marked ${status}.`);
   }
 
   const fullText = buildFullText(kit);
@@ -126,7 +165,12 @@ function KitPage() {
             <Button variant="outline" size="sm" onClick={() => window.print()} className="gap-1.5">
               <Printer className="size-4" /> Print
             </Button>
-            <Button variant="outline" size="sm" onClick={rename} className="gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setRenameTarget(kit)}
+              className="gap-1.5"
+            >
               <Pencil className="size-4" /> Rename
             </Button>
             <Button variant="outline" size="sm" onClick={duplicate} className="gap-1.5">
@@ -135,7 +179,7 @@ function KitPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={remove}
+              onClick={() => setDeleteTarget(kit)}
               className="gap-1.5 text-destructive hover:text-destructive"
             >
               <Trash2 className="size-4" /> Delete
@@ -148,9 +192,24 @@ function KitPage() {
           <h1 className="mt-1 font-display text-3xl sm:text-4xl font-semibold">
             {kit.campaignName}
           </h1>
-          <p className="mt-1 text-muted-foreground">
-            Saved {new Date(kit.createdAt).toLocaleString()}
-          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <p className="text-muted-foreground">
+              Saved {new Date(kit.createdAt).toLocaleString()}
+            </p>
+            <Badge variant="secondary" className="capitalize">
+              {kit.status}
+            </Badge>
+            <Select value={kit.status} onValueChange={(value: KitStatus) => changeStatus(value)}>
+              <SelectTrigger className="w-36" aria-label="Campaign status">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <BrandHeader
@@ -168,6 +227,7 @@ function KitPage() {
             <Info label="Offer" value={g.summary.offer} />
             <Info label="Dates" value={g.summary.dates} />
             <Info label="Recommended CTA" value={g.summary.recommendedCta} />
+            {g.summary.notes && <Info label="Extra notes used" value={g.summary.notes} />}
           </dl>
         </SectionCard>
 
@@ -177,16 +237,23 @@ function KitPage() {
 
         <SectionCard
           title="3. Instagram captions"
-          subtitle="No hashtags — add your own if you'd like."
+          subtitle="Ready-to-paste captions with hashtags kept separate."
         >
           <BlockList items={g.instagramCaptions} />
         </SectionCard>
 
-        <SectionCard title="4. Google Business Profile posts">
+        <SectionCard
+          title="4. Hashtag suggestions"
+          action={<CopyButton text={g.hashtagSuggestions.join(" ")} />}
+        >
+          <p className="text-sm leading-relaxed">{g.hashtagSuggestions.join(" ")}</p>
+        </SectionCard>
+
+        <SectionCard title="5. Google Business Profile posts">
           <BlockList items={g.googlePosts} />
         </SectionCard>
 
-        <SectionCard title="5. Flyer copy" action={<CopyButton text={flyerText(kit)} />}>
+        <SectionCard title="6. Flyer copy" action={<CopyButton text={flyerText(kit)} />}>
           <div className="space-y-3 text-sm">
             <div>
               <div className="text-xs uppercase tracking-wider text-muted-foreground">Headline</div>
@@ -210,12 +277,21 @@ function KitPage() {
           </div>
         </SectionCard>
 
-        <SectionCard title="6. Review request messages">
+        <SectionCard title="7. Email newsletter" action={<CopyButton text={emailText(kit)} />}>
+          <div className="flex flex-col gap-3 text-sm">
+            <Info label="Subject line" value={g.emailNewsletter.subject} />
+            <Info label="Preview text" value={g.emailNewsletter.previewText} />
+            <Info label="Email body" value={g.emailNewsletter.body} />
+            <Info label="CTA" value={g.emailNewsletter.cta} />
+          </div>
+        </SectionCard>
+
+        <SectionCard title="8. Review request messages">
           <BlockList items={g.reviewRequests} />
         </SectionCard>
 
         <SectionCard
-          title="7. Website section copy"
+          title="9. Website section copy"
           action={
             <CopyButton
               text={`${g.websiteCopy.headline}\n\n${g.websiteCopy.paragraph}\n\n[${g.websiteCopy.button}]`}
@@ -231,7 +307,7 @@ function KitPage() {
           </div>
         </SectionCard>
 
-        <SectionCard title="8. Simple ad copy" action={<CopyButton text={adText(kit)} />}>
+        <SectionCard title="10. Simple ad copy" action={<CopyButton text={adText(kit)} />}>
           <div className="space-y-2 text-sm">
             <Info label="Headline" value={g.adCopy.headline} />
             <Info label="Primary text" value={g.adCopy.primary} />
@@ -241,7 +317,7 @@ function KitPage() {
         </SectionCard>
 
         <SectionCard
-          title="9. AI image prompt ideas"
+          title="11. AI image prompt ideas"
           subtitle="Paste into Canva, ChatGPT, or your favourite tool."
         >
           <div className="space-y-3">
@@ -259,7 +335,7 @@ function KitPage() {
           </div>
         </SectionCard>
 
-        <SectionCard title="10. 7-day posting plan">
+        <SectionCard title="12. 7-day posting plan">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -285,7 +361,7 @@ function KitPage() {
         </SectionCard>
 
         <SectionCard
-          title="11. Printable summary"
+          title="13. Printable summary"
           subtitle="Use your browser's Print to save as PDF."
         >
           <PrintableSummary kit={kit} headerProfile={headerProfile} logoUrl={logoUrl} />
@@ -302,18 +378,16 @@ function KitPage() {
           </div>
         )}
 
-        <div className="no-print flex justify-end pt-2">
-          <Button
-            variant="outline"
-            onClick={() => {
-              navigator.clipboard.writeText(fullText);
-              toast.success("Full kit copied.");
-            }}
-            className="gap-2"
-          >
-            <CopyIcon className="size-4" /> Copy full kit
-          </Button>
-        </div>
+        <RenameKitDialog
+          kit={renameTarget}
+          onOpenChange={(open) => !open && setRenameTarget(null)}
+          onRename={rename}
+        />
+        <DeleteKitDialog
+          kit={deleteTarget}
+          onOpenChange={(open) => !open && setDeleteTarget(null)}
+          onDelete={remove}
+        />
       </div>
     </AppLayout>
   );
@@ -458,6 +532,10 @@ function adText(k: PromoKit) {
   const a = k.generatedSections.adCopy;
   return `Headline: ${a.headline}\nPrimary: ${a.primary}\nDescription: ${a.description}\nCTA: ${a.ctaButton}`;
 }
+function emailText(k: PromoKit) {
+  const email = k.generatedSections.emailNewsletter;
+  return `Subject: ${email.subject}\nPreview: ${email.previewText}\n\n${email.body}\n\nCTA: ${email.cta}`;
+}
 function buildFullText(k: PromoKit) {
   const g = k.generatedSections;
   const sec = (title: string, body: string) => `=== ${title} ===\n${body}\n`;
@@ -468,8 +546,10 @@ function buildFullText(k: PromoKit) {
       "INSTAGRAM CAPTIONS",
       g.instagramCaptions.map((p) => `[${p.label}]\n${p.text}`).join("\n\n"),
     ),
+    sec("HASHTAG SUGGESTIONS", g.hashtagSuggestions.join(" ")),
     sec("GOOGLE BUSINESS POSTS", g.googlePosts.map((p) => `[${p.label}]\n${p.text}`).join("\n\n")),
     sec("FLYER COPY", flyerText(k)),
+    sec("EMAIL NEWSLETTER", emailText(k)),
     sec("REVIEW REQUESTS", g.reviewRequests.map((p) => `[${p.label}]\n${p.text}`).join("\n\n")),
     sec(
       "WEBSITE COPY",

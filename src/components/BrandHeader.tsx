@@ -24,8 +24,7 @@ export function BrandHeader({ profile, logoDataUrl, useLogo, subtitle }: Props) 
           <img
             src={logoDataUrl}
             alt={`${profile.businessName} logo`}
-            className="max-h-[80px] max-w-[160px] h-auto w-auto object-contain"
-            style={{ maxHeight: 64 }}
+            className="max-h-20 max-w-[160px] h-auto w-auto object-contain"
           />
         ) : (
           <span

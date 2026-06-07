@@ -13,6 +13,11 @@ function fmtDates(start: string, end: string) {
 
 function toneOpener(tone: string, seed: string) {
   const choices: Record<string, string[]> = {
+    Friendly: [
+      "A quick friendly update from your local team:",
+      "Here's something helpful for our local customers:",
+      "We wanted to share this with you:",
+    ],
     Professional: [
       "We're pleased to share",
       "Now available locally:",
@@ -40,6 +45,48 @@ function toneOpener(tone: string, seed: string) {
     choices[tone] || ["Hello from your local team:", "Good news:", "Here's a local update:"],
     seed,
   );
+}
+
+function formatExtraNotes(notes: string) {
+  const trimmed = notes.trim().replace(/\s+/g, " ");
+  if (!trimmed) return "";
+  return trimmed.replace(/[.!?]+$/, "");
+}
+
+function hashtag(value: string) {
+  const cleaned = value
+    .replace(/&/g, " and ")
+    .replace(/[^a-zA-Z0-9\s]/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join("");
+  return cleaned ? `#${cleaned}` : "";
+}
+
+function hashtagSuggestions(
+  businessType: string,
+  location: string,
+  goal: string,
+  service: string,
+  tone: string,
+) {
+  const tags = new Set([
+    hashtag(businessType),
+    hashtag(service),
+    hashtag(location),
+    hashtag(`${location} Small Business`),
+    hashtag(goal),
+    hashtag(`${tone} Service`),
+    "#SupportLocal",
+    "#ShopLocal",
+  ]);
+  if (/lethbridge/i.test(location)) {
+    tags.add("#YQLBusiness");
+    tags.add("#LethbridgeSmallBusiness");
+  }
+  return [...tags].filter(Boolean).slice(0, 10);
 }
 
 function goalLanguage(goal: string) {
@@ -156,6 +203,8 @@ export function generateKit(
   const opener = toneOpener(tone, seed);
   const dates = fmtDates(inputs.startDate, inputs.endDate);
   const contactBits = [profile.contactMethod, profile.websiteLink].filter(Boolean).join(" | ");
+  const extraNotes = formatExtraNotes(inputs.extraNotes);
+  const noteSentence = extraNotes ? ` A helpful detail: ${extraNotes}.` : "";
 
   const facebookPosts = [
     {
@@ -164,7 +213,7 @@ export function generateKit(
     },
     {
       label: "Story-led post",
-      text: `${goalCopy.hook}. At ${name}, ${audience} can count on ${benefit}. We're currently offering ${offer} for ${service}${dates !== "Ongoing" ? ` from ${dates}` : ""}. ${cta}${contactBits ? `: ${contactBits}` : "."}`,
+      text: `${goalCopy.hook}. At ${name}, ${audience} can count on ${benefit}. We're currently offering ${offer} for ${service}${dates !== "Ongoing" ? ` from ${dates}` : ""}.${noteSentence} ${cta}${contactBits ? `: ${contactBits}` : "."}`,
     },
     {
       label: "Local reminder",
@@ -197,13 +246,14 @@ export function generateKit(
       offer,
       dates,
       recommendedCta: cta,
+      notes: extraNotes,
     },
     facebookPosts,
     instagramCaptions,
     googlePosts: [
       {
         label: "Main local update",
-        text: `${name} is offering ${offer} for ${service} in ${location}. ${benefit}. ${cta}${contactBits ? `: ${contactBits}` : "."}`,
+        text: `${name} is offering ${offer} for ${service} in ${location}. ${benefit}.${noteSentence} ${cta}${contactBits ? `: ${contactBits}` : "."}`,
       },
       {
         label: "Follow-up update",
@@ -213,7 +263,12 @@ export function generateKit(
     flyer: {
       headline: pick([inputs.campaignName, goalCopy.hook, `${offer} at ${name}`], seed),
       subheadline: `${service} for ${audience} in ${location}`,
-      bullets: [benefit, `${offer}${dates !== "Ongoing" ? ` | ${dates}` : ""}`, business.trust],
+      bullets: [
+        benefit,
+        `${offer}${dates !== "Ongoing" ? ` | ${dates}` : ""}`,
+        business.trust,
+        ...(extraNotes ? [extraNotes] : []),
+      ],
       cta,
       contact: contactBits || profile.contactMethod || "Get in touch",
     },
@@ -245,8 +300,18 @@ export function generateKit(
       description: `${goalCopy.urgency}. ${benefit}.`,
       ctaButton: pick(["Book Now", "Learn More", "Contact Us", "Get Offer"], `${seed}-button`),
     },
+    emailNewsletter: {
+      subject: pick(
+        [`${offer} from ${name}`, `${service} in ${location}`, goalCopy.hook],
+        `${seed}-email`,
+      ),
+      previewText: `${goalCopy.urgency}. ${benefit}.`,
+      body: `Hi there,\n\n${opener} ${name} is sharing ${offer} for ${service} in ${location}. ${benefit}.${noteSentence}\n\n${cta}${contactBits ? `: ${contactBits}` : "."}\n\nThank you,\n${name}`,
+      cta,
+    },
+    hashtagSuggestions: hashtagSuggestions(businessType, location, goal, service, tone),
     imagePrompts: [
-      `A warm promotional photo for a ${businessType} in ${location}, showing ${business.visual}. Focus on ${goal.toLowerCase()}. Use ${mainColour} with ${secondColour} accents. Leave clear space for a logo, headline, and call to action. No text in the image. Authentic local-business style.`,
+      `A warm promotional photo for a ${businessType} in ${location}, showing ${business.visual}. Focus on ${goal.toLowerCase()}.${extraNotes ? ` Include visual context for: ${extraNotes}.` : ""} Use ${mainColour} with ${secondColour} accents. Leave clear space for a logo, headline, and call to action. No text in the image. Authentic local-business style.`,
       `A polished lifestyle image representing ${service} for ${audience}, with ${business.visual}. Use ${mainColour} and ${secondColour}. Keep the composition uncluttered with room for campaign copy. No text overlay.`,
       `A simple print-ready promotional background for a ${businessType} featuring ${offer}. Use ${mainColour} and ${secondColour}, subtle local details, and generous empty space for branding and a call to action. No text in the image.`,
     ],
@@ -271,7 +336,12 @@ export function generateKit(
         topic: `Speak to ${audience}`,
       },
       { day: "Day 5", platform: "Instagram", type: "Behind the scenes", topic: business.visual },
-      { day: "Day 6", platform: "Email or SMS", type: "Direct reminder", topic: goalCopy.urgency },
+      {
+        day: "Day 6",
+        platform: "Email or SMS",
+        type: "Direct reminder",
+        topic: extraNotes ? `${goalCopy.urgency}; mention ${extraNotes}` : goalCopy.urgency,
+      },
       { day: "Day 7", platform: "Facebook", type: "Final follow-up", topic: `${cta}` },
     ],
   };

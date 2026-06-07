@@ -1,6 +1,9 @@
 # Rose & Paw Local Promo Kit Builder
 
-Rose & Paw Local Promo Kit Builder is a local-first MVP for small businesses. A short campaign form generates ready-to-paste Facebook posts, Instagram captions, Google Business Profile updates, flyer copy, review requests, website copy, ad copy, image prompts, and a seven-day posting plan.
+Rose & Paw Local Promo Kit Builder is a local-first MVP for small businesses. A short campaign form generates ready-to-paste Facebook posts, Instagram captions, hashtag suggestions, Google Business Profile updates, flyer copy, email newsletter copy, review requests, website copy, ad copy, image prompts, and a seven-day posting plan.
+
+Generated kits preserve the logo used at creation time, use extra campaign notes as writing context,
+and can be marked Draft, Active, or Completed. Saved-kit deletion includes a short Undo action.
 
 ## Privacy and local storage
 
@@ -32,3 +35,6 @@ Use `npm run preview` to serve a production build locally.
 - Logos are limited to PNG, JPG, and WEBP files up to 2 MB and are resized before storage. SVG upload is disabled.
 - Generated copy is template-based and should be reviewed for accuracy, offer terms, and local advertising requirements.
 - Design-help requests stay local and must be copied into an email or messaging app.
+
+See [docs/roadmap.md](docs/roadmap.md) for intentionally deferred product improvements and
+[docs/release-notes.md](docs/release-notes.md) for recent changes.

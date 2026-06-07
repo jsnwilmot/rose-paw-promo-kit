@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -139,8 +139,9 @@ function CreatePage() {
       formInputs: form,
       generatedSections: generated,
       useLogo: form.useLogo,
-      logoSnapshotDataUrl: "",
-      logoSnapshotFileName: "",
+      logoSnapshotDataUrl: form.useLogo && profile.logoDataUrl ? profile.logoDataUrl : "",
+      logoSnapshotFileName: form.useLogo && profile.logoFileName ? profile.logoFileName : "",
+      status: "draft",
     };
     const result = upsertKit(kit);
     if (!result.ok) {
@@ -176,9 +177,9 @@ function CreatePage() {
         ) : (
           <div className="rounded-2xl border border-dashed border-border bg-muted/40 p-4 text-sm text-muted-foreground">
             Tip: fill in your{" "}
-            <a className="underline font-medium text-foreground" href="/profile">
+            <Link className="underline font-medium text-foreground" to="/profile">
               business profile
-            </a>{" "}
+            </Link>{" "}
             first to brand your kit.
           </div>
         )}

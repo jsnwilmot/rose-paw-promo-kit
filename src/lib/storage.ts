@@ -49,6 +49,7 @@ export type GeneratedSections = {
     offer: string;
     dates: string;
     recommendedCta: string;
+    notes: string;
   };
   facebookPosts: { label: string; text: string }[];
   instagramCaptions: { label: string; text: string }[];
@@ -63,9 +64,13 @@ export type GeneratedSections = {
   reviewRequests: { label: string; text: string }[];
   websiteCopy: { headline: string; paragraph: string; button: string };
   adCopy: { headline: string; primary: string; description: string; ctaButton: string };
+  emailNewsletter: { subject: string; previewText: string; body: string; cta: string };
+  hashtagSuggestions: string[];
   imagePrompts: string[];
   postingPlan: { day: string; platform: string; type: string; topic: string }[];
 };
+
+export type KitStatus = "draft" | "active" | "completed";
 
 export type PromoKit = {
   id: string;
@@ -80,6 +85,7 @@ export type PromoKit = {
   useLogo: boolean;
   logoSnapshotDataUrl: string;
   logoSnapshotFileName: string;
+  status: KitStatus;
 };
 
 export type AppSettings = {
@@ -203,6 +209,13 @@ const promoFormInputsSchema = z
     path: ["endDate"],
   });
 
+const emailNewsletterSchema = z.object({
+  subject: nonEmpty,
+  previewText: nonEmpty,
+  body: nonEmpty,
+  cta: nonEmpty,
+});
+
 const generatedSectionsSchema = z.object({
   summary: z.object({
     campaignName: nonEmpty,
@@ -211,6 +224,7 @@ const generatedSectionsSchema = z.object({
     offer: nonEmpty,
     dates: nonEmpty,
     recommendedCta: nonEmpty,
+    notes: z.string().default(""),
   }),
   facebookPosts: z.array(labelledTextSchema).min(1),
   instagramCaptions: z.array(labelledTextSchema).min(1),
@@ -230,6 +244,13 @@ const generatedSectionsSchema = z.object({
     description: nonEmpty,
     ctaButton: nonEmpty,
   }),
+  emailNewsletter: emailNewsletterSchema.default({
+    subject: "A local update",
+    previewText: "A quick update from your local team.",
+    body: "Hello,\n\nWe have a helpful local update to share. Get in touch to learn more.",
+    cta: "Get in touch",
+  }),
+  hashtagSuggestions: z.array(nonEmpty).default([]),
   imagePrompts: z.array(nonEmpty).min(1),
   postingPlan: z
     .array(z.object({ day: nonEmpty, platform: nonEmpty, type: nonEmpty, topic: nonEmpty }))
@@ -249,6 +270,7 @@ const promoKitSchema = z.object({
   useLogo: z.boolean(),
   logoSnapshotDataUrl: logoDataUrl.default(""),
   logoSnapshotFileName: z.string().default(""),
+  status: z.enum(["draft", "active", "completed"]).default("draft"),
 });
 
 const appSettingsSchema = z.object({
