@@ -1,4 +1,5 @@
 import type { AppSettings, BusinessProfile, GeneratedSections, PromoFormInputs } from "./storage";
+import { legacyOutputs } from "./output-selection";
 
 function pick<T>(items: T[], seed: string): T {
   const total = [...seed].reduce((sum, char) => sum + char.charCodeAt(0), 0);
@@ -271,6 +272,171 @@ function shortHeadline(service: string, offer: string, seed: string) {
   );
 }
 
+function buildCampaignCalendar(
+  inputs: PromoFormInputs,
+  service: string,
+  offer: string,
+  cta: string,
+): GeneratedSections["postingPlan"] {
+  const outputs = inputs.selectedOutputs || legacyOutputs;
+  const day = (index: number, platform: string, type: string, topic: string, note: string) => ({
+    day: `Day ${index}`,
+    platform,
+    type,
+    topic,
+    note,
+  });
+
+  if (
+    outputs.facebookPosts &&
+    !Object.entries(outputs).some(
+      ([key, value]) => key !== "facebookPosts" && key !== "printableSummary" && value,
+    )
+  ) {
+    return [
+      day(1, "Facebook", "Campaign launch post", offer || service, "Introduce the campaign"),
+      day(2, "Facebook", "Service benefit post", service, "Explain one practical benefit"),
+      day(3, "Facebook", "Behind-the-scenes post", service, "Build trust by showing the process"),
+      day(4, "Facebook", "Customer question post", service, "Answer a common customer question"),
+      day(
+        5,
+        "Facebook",
+        "Offer reminder post",
+        offer || service,
+        "Give customers a useful reminder",
+      ),
+      day(6, "Facebook", "Trust post", service, "Share a review-style trust message"),
+      day(7, "Facebook", "Final call-to-action post", cta, "Close with one clear next step"),
+    ];
+  }
+  if (
+    outputs.flyerCopy &&
+    !Object.entries(outputs).some(
+      ([key, value]) => key !== "flyerCopy" && key !== "printableSummary" && value,
+    )
+  ) {
+    return [
+      day(1, "Flyer", "Finalize copy", offer || service, "Review the headline, details, and CTA"),
+      day(2, "Flyer", "Print or export", offer || service, "Prepare a shareable flyer"),
+      day(3, "Local outreach", "Share flyer", service, "Place or share the flyer locally"),
+      day(
+        4,
+        "Customer communication",
+        "Share flyer directly",
+        service,
+        "Use an existing customer channel",
+      ),
+      day(
+        5,
+        "Direct follow-up",
+        "Warm lead follow-up",
+        offer || service,
+        "Answer questions from interested customers",
+      ),
+      day(6, "Flyer", "Refresh placement", service, "Check and refresh flyer visibility"),
+      day(7, "Direct reminder", "Final reminder", cta, "Give one clear final next step"),
+    ];
+  }
+  if (
+    outputs.reviewRequests &&
+    !Object.entries(outputs).some(
+      ([key, value]) => key !== "reviewRequests" && key !== "printableSummary" && value,
+    )
+  ) {
+    return [
+      day(1, "Review request", "Prepare message", service, "Choose a short, natural request"),
+      day(2, "Direct message", "Send first batch", service, "Contact recent happy customers"),
+      day(
+        3,
+        "Direct follow-up",
+        "Small follow-up batch",
+        service,
+        "Follow up with 2 to 3 customers",
+      ),
+      day(
+        4,
+        "Public channel",
+        "Thank-you message",
+        service,
+        "Thank customers without pressuring them",
+      ),
+      day(
+        5,
+        "Direct message",
+        "Send second batch",
+        service,
+        "Share the review link with another small batch",
+      ),
+      day(6, "Reviews", "Reply to reviews", service, "Respond to new reviews"),
+      day(7, "Review request", "Review results", service, "Plan the next request batch"),
+    ];
+  }
+  if (
+    outputs.websiteCopy &&
+    !Object.entries(outputs).some(
+      ([key, value]) => key !== "websiteCopy" && key !== "printableSummary" && value,
+    )
+  ) {
+    return [
+      day(1, "Website", "Review service page", service, "Identify the page that needs updating"),
+      day(2, "Website", "Update headline and intro", service, "Make the service clear"),
+      day(3, "Website", "Add service benefits", service, "Explain practical customer benefits"),
+      day(4, "Website", "Add FAQ", service, "Answer common questions"),
+      day(5, "Website", "Add call to action", cta, "Make the next step clear"),
+      day(6, "Website", "Check mobile view", service, "Review the update on a small screen"),
+      day(7, "Website", "Publish and share", service, "Publish the update and tell customers"),
+    ];
+  }
+
+  const channels: { platform: string; types: string[] }[] = [];
+  if (outputs.facebookPosts)
+    channels.push({
+      platform: "Facebook",
+      types: ["Campaign launch", "Benefit post", "Final reminder"],
+    });
+  if (outputs.instagramCaptions)
+    channels.push({
+      platform: "Instagram",
+      types: ["Photo or reel", "Behind the scenes", "Reminder"],
+    });
+  if (outputs.googleBusinessPosts)
+    channels.push({
+      platform: "Google Business Profile",
+      types: ["Local update", "Service reminder", "Offer reminder"],
+    });
+  if (outputs.flyerCopy)
+    channels.push({ platform: "Flyer", types: ["Finalize copy", "Share locally"] });
+  if (outputs.reviewRequests)
+    channels.push({ platform: "Review request", types: ["Send request", "Follow up"] });
+  if (outputs.websiteCopy || outputs.faqContent)
+    channels.push({ platform: "Website", types: ["Update service page", "Add FAQ"] });
+  if (outputs.adCopy)
+    channels.push({ platform: "Ad campaign", types: ["Prepare ad", "Review response"] });
+  if (outputs.imagePrompts)
+    channels.push({ platform: "Creative", types: ["Create campaign image"] });
+  if (outputs.videoScripts)
+    channels.push({ platform: "Short video", types: ["Record service video", "Share video"] });
+  if (!channels.length)
+    channels.push({
+      platform: "Campaign planning",
+      types: ["Review campaign", "Prepare next step"],
+    });
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const channel = channels[index % channels.length];
+    const type = channel.types[Math.floor(index / channels.length) % channel.types.length];
+    return day(
+      index + 1,
+      channel.platform,
+      type,
+      index === 0 ? offer || service : service,
+      index === 6
+        ? `Close with a clear next step: ${cta}`
+        : "Keep the campaign moving with a useful customer touchpoint",
+    );
+  });
+}
+
 export function generateKit(
   inputs: PromoFormInputs,
   profile: BusinessProfile,
@@ -399,7 +565,7 @@ export function generateKit(
   const secondColour = profile.secondaryBrandColour || "#E8A87C";
   const flyerBullets = formatBenefitBullets(benefit, business.benefits, offer, dates, extraNotes);
 
-  return {
+  const generated: GeneratedSections = {
     summary: {
       campaignName: inputs.campaignName,
       goal,
@@ -507,6 +673,22 @@ export function generateKit(
       ),
       button: cta,
     },
+    faqContent: [
+      {
+        question: `What does ${service} include?`,
+        answer: `${name} can explain the service details, timing, and next steps before you book.`,
+      },
+      {
+        question: location ? `Do you serve ${location}?` : "What area do you serve?",
+        answer: location
+          ? `${name} serves customers in ${location}.`
+          : `Contact ${name} to confirm the service area.`,
+      },
+      {
+        question: "How do I get started?",
+        answer: `${cta}. We will help you understand the next step.`,
+      },
+    ],
     adCopy: {
       headline: limitWords(
         pick(
@@ -544,56 +726,33 @@ export function generateKit(
       `Clean lifestyle photo showing ${service} for ${audience}. Focus on one clear service moment, natural expressions, uncluttered background, ${mainColour} and ${secondColour} accents. No text overlay, no logos.`,
       `Simple print-friendly background for a ${businessType}${offer ? ` campaign about ${offer}` : ` campaign about ${service}`}. Subtle local details, generous empty space for branding added later, ${mainColour} and ${secondColour}. No text overlay, no logos.`,
     ],
-    postingPlan: [
+    videoScripts: [
       {
-        day: "Day 1",
-        platform: "Facebook",
-        type: "Campaign launch",
-        topic: offer || service,
-        note: goalCopy.launchPurpose,
+        label: "Service in action",
+        text: `Show one clear moment of ${service}. Explain who it helps, then close with: ${cta}.`,
       },
       {
-        day: "Day 2",
-        platform: "Instagram",
-        type: "Photo or reel",
-        topic: `${service} in action`,
-        note: "Show one clear service moment and build familiarity",
-      },
-      {
-        day: "Day 3",
-        platform: "Google Business Profile",
-        type: "Local update",
-        topic: serviceLine,
-        note: "Help nearby searchers understand the service and next step",
-      },
-      {
-        day: "Day 4",
-        platform: "Facebook",
-        type: "Customer-focused post",
-        topic: `Who ${service} helps`,
-        note: `Explain the practical benefit for ${audience}`,
-      },
-      {
-        day: "Day 5",
-        platform: "Instagram",
-        type: "Behind the scenes",
-        topic: business.process,
-        note: "Build trust by showing a simple part of the process",
-      },
-      {
-        day: "Day 6",
-        platform: "Email or SMS",
-        type: "Direct reminder",
-        topic: offer || service,
-        note: goalCopy.reminderPurpose,
-      },
-      {
-        day: "Day 7",
-        platform: "Facebook",
-        type: "Final reminder",
-        topic: cta,
-        note: "Close the campaign with one clear next step",
+        label: "Quick customer question",
+        text: `Answer one common question about ${service} in under 30 seconds. Keep the answer practical and finish with: ${cta}.`,
       },
     ],
+    postingPlan: buildCampaignCalendar(inputs, service, offer, cta),
   };
+
+  const outputs = inputs.selectedOutputs || legacyOutputs;
+  if (!outputs.facebookPosts) delete generated.facebookPosts;
+  if (!outputs.instagramCaptions) {
+    delete generated.instagramCaptions;
+    delete generated.hashtagSuggestions;
+  }
+  if (!outputs.googleBusinessPosts) delete generated.googlePosts;
+  if (!outputs.flyerCopy) delete generated.flyer;
+  if (!outputs.reviewRequests) delete generated.reviewRequests;
+  if (!outputs.websiteCopy) delete generated.websiteCopy;
+  if (!outputs.faqContent) delete generated.faqContent;
+  if (!outputs.adCopy) delete generated.adCopy;
+  if (!outputs.imagePrompts) delete generated.imagePrompts;
+  if (!outputs.videoScripts) delete generated.videoScripts;
+  if (inputs.selectedOutputs) delete generated.emailNewsletter;
+  return generated;
 }

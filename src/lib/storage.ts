@@ -39,6 +39,21 @@ export type PromoFormInputs = {
   callToAction: string;
   extraNotes: string;
   useLogo: boolean;
+  selectedOutputs?: SelectedOutputs;
+};
+
+export type SelectedOutputs = {
+  facebookPosts: boolean;
+  instagramCaptions: boolean;
+  googleBusinessPosts: boolean;
+  flyerCopy: boolean;
+  reviewRequests: boolean;
+  websiteCopy: boolean;
+  faqContent: boolean;
+  adCopy: boolean;
+  imagePrompts: boolean;
+  videoScripts: boolean;
+  printableSummary: boolean;
 };
 
 export type GeneratedSections = {
@@ -51,22 +66,24 @@ export type GeneratedSections = {
     recommendedCta: string;
     notes: string;
   };
-  facebookPosts: { label: string; text: string }[];
-  instagramCaptions: { label: string; text: string }[];
-  googlePosts: { label: string; text: string }[];
-  flyer: {
+  facebookPosts?: { label: string; text: string }[];
+  instagramCaptions?: { label: string; text: string }[];
+  googlePosts?: { label: string; text: string }[];
+  flyer?: {
     headline: string;
     subheadline: string;
     bullets: string[];
     cta: string;
     contact: string;
   };
-  reviewRequests: { label: string; text: string }[];
-  websiteCopy: { headline: string; paragraph: string; button: string };
-  adCopy: { headline: string; primary: string; description: string; ctaButton: string };
-  emailNewsletter: { subject: string; previewText: string; body: string; cta: string };
-  hashtagSuggestions: string[];
-  imagePrompts: string[];
+  reviewRequests?: { label: string; text: string }[];
+  websiteCopy?: { headline: string; paragraph: string; button: string };
+  faqContent?: { question: string; answer: string }[];
+  adCopy?: { headline: string; primary: string; description: string; ctaButton: string };
+  emailNewsletter?: { subject: string; previewText: string; body: string; cta: string };
+  hashtagSuggestions?: string[];
+  imagePrompts?: string[];
+  videoScripts?: { label: string; text: string }[];
   postingPlan: { day: string; platform: string; type: string; topic: string; note?: string }[];
 };
 
@@ -168,6 +185,19 @@ const logoDataUrl = z.union([
 ]);
 const nonEmpty = z.string().trim().min(1);
 const labelledTextSchema = z.object({ label: nonEmpty, text: nonEmpty });
+const selectedOutputsSchema = z.object({
+  facebookPosts: z.boolean(),
+  instagramCaptions: z.boolean(),
+  googleBusinessPosts: z.boolean(),
+  flyerCopy: z.boolean(),
+  reviewRequests: z.boolean(),
+  websiteCopy: z.boolean(),
+  faqContent: z.boolean(),
+  adCopy: z.boolean(),
+  imagePrompts: z.boolean(),
+  videoScripts: z.boolean(),
+  printableSummary: z.boolean(),
+});
 
 const businessProfileSchema = z.object({
   businessName: z.string(),
@@ -212,6 +242,7 @@ const promoFormInputsSchema = z
     callToAction: z.string(),
     extraNotes: z.string(),
     useLogo: z.boolean(),
+    selectedOutputs: selectedOutputsSchema.optional(),
   })
   .refine((value) => !value.startDate || !value.endDate || value.endDate >= value.startDate, {
     message: "end date cannot be before start date",
@@ -235,32 +266,36 @@ const generatedSectionsSchema = z.object({
     recommendedCta: nonEmpty,
     notes: z.string().default(""),
   }),
-  facebookPosts: z.array(labelledTextSchema).min(1),
-  instagramCaptions: z.array(labelledTextSchema).min(1),
-  googlePosts: z.array(labelledTextSchema).min(1),
-  flyer: z.object({
-    headline: nonEmpty,
-    subheadline: nonEmpty,
-    bullets: z.array(nonEmpty).min(1),
-    cta: nonEmpty,
-    contact: nonEmpty,
-  }),
-  reviewRequests: z.array(labelledTextSchema).min(1),
-  websiteCopy: z.object({ headline: nonEmpty, paragraph: nonEmpty, button: nonEmpty }),
-  adCopy: z.object({
-    headline: nonEmpty,
-    primary: nonEmpty,
-    description: nonEmpty,
-    ctaButton: nonEmpty,
-  }),
-  emailNewsletter: emailNewsletterSchema.default({
-    subject: "A local update",
-    previewText: "A quick update from your local team.",
-    body: "Hello,\n\nWe have a helpful local update to share. Get in touch to learn more.",
-    cta: "Get in touch",
-  }),
-  hashtagSuggestions: z.array(nonEmpty).default([]),
-  imagePrompts: z.array(nonEmpty).min(1),
+  facebookPosts: z.array(labelledTextSchema).min(1).optional(),
+  instagramCaptions: z.array(labelledTextSchema).min(1).optional(),
+  googlePosts: z.array(labelledTextSchema).min(1).optional(),
+  flyer: z
+    .object({
+      headline: nonEmpty,
+      subheadline: nonEmpty,
+      bullets: z.array(nonEmpty).min(1),
+      cta: nonEmpty,
+      contact: nonEmpty,
+    })
+    .optional(),
+  reviewRequests: z.array(labelledTextSchema).min(1).optional(),
+  websiteCopy: z.object({ headline: nonEmpty, paragraph: nonEmpty, button: nonEmpty }).optional(),
+  faqContent: z
+    .array(z.object({ question: nonEmpty, answer: nonEmpty }))
+    .min(1)
+    .optional(),
+  adCopy: z
+    .object({
+      headline: nonEmpty,
+      primary: nonEmpty,
+      description: nonEmpty,
+      ctaButton: nonEmpty,
+    })
+    .optional(),
+  emailNewsletter: emailNewsletterSchema.optional(),
+  hashtagSuggestions: z.array(nonEmpty).optional(),
+  imagePrompts: z.array(nonEmpty).min(1).optional(),
+  videoScripts: z.array(labelledTextSchema).min(1).optional(),
   postingPlan: z
     .array(
       z.object({

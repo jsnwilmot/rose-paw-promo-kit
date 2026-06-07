@@ -29,6 +29,7 @@ import {
 } from "@/lib/storage";
 import { ArrowLeft, Printer, Trash2, Pencil, Files } from "lucide-react";
 import { toast } from "sonner";
+import { legacyOutputs } from "@/lib/output-selection";
 
 export const Route = createFileRoute("/kit/$id")({
   head: () => ({ meta: [{ title: "Promo Kit — Rose & Paw" }] }),
@@ -95,8 +96,11 @@ function KitPage() {
   };
   const logoUrl = kit.useLogo ? kit.logoSnapshotDataUrl || profile.logoDataUrl : "";
   const g = kit.generatedSections;
+  const selectedOutputs = kit.formInputs.selectedOutputs || legacyOutputs;
+  const showPrintableSummary = selectedOutputs.printableSummary;
 
   function rename(title: string) {
+    if (!kit) return;
     const updated = renameKitById(kit.id, title);
     if (!updated) return toast.error("The kit could not be renamed.");
     setKit(updated);
@@ -105,6 +109,7 @@ function KitPage() {
   }
 
   function duplicate() {
+    if (!kit) return;
     const copy = duplicateKitById(kit.id);
     if (!copy) return toast.error("The kit could not be duplicated.");
     toast.success("Kit duplicated.");
@@ -112,6 +117,7 @@ function KitPage() {
   }
 
   function remove() {
+    if (!kit) return;
     const deleted = kit;
     const result = deleteKit(deleted.id);
     if (!result.ok) {
@@ -134,6 +140,7 @@ function KitPage() {
   }
 
   function changeStatus(status: KitStatus) {
+    if (!kit) return;
     const updated = { ...kit, status, updatedAt: new Date().toISOString() };
     const result = upsertKit(updated);
     if (!result.ok) return toast.error(result.error);
@@ -226,111 +233,155 @@ function KitPage() {
           </dl>
         </SectionCard>
 
-        <SectionCard title="2. Facebook posts" subtitle="Three ready-to-paste options.">
-          <BlockList items={g.facebookPosts} />
-        </SectionCard>
+        {selectedOutputs.facebookPosts && g.facebookPosts && (
+          <SectionCard title="Facebook posts" subtitle="Three ready-to-paste options.">
+            <BlockList items={g.facebookPosts} />
+          </SectionCard>
+        )}
 
-        <SectionCard
-          title="3. Instagram captions"
-          subtitle="Ready-to-paste captions with hashtags kept separate."
-        >
-          <BlockList items={g.instagramCaptions} />
-        </SectionCard>
+        {selectedOutputs.instagramCaptions && g.instagramCaptions && (
+          <SectionCard
+            title="Instagram captions"
+            subtitle="Ready-to-paste captions with hashtags kept separate."
+          >
+            <BlockList items={g.instagramCaptions} />
+          </SectionCard>
+        )}
 
-        <SectionCard
-          title="4. Hashtag suggestions"
-          action={<CopyButton text={g.hashtagSuggestions.join(" ")} />}
-        >
-          <p className="text-sm leading-relaxed">{g.hashtagSuggestions.join(" ")}</p>
-        </SectionCard>
+        {selectedOutputs.instagramCaptions && g.hashtagSuggestions?.length ? (
+          <SectionCard
+            title="Hashtag suggestions"
+            action={<CopyButton text={g.hashtagSuggestions.join(" ")} />}
+          >
+            <p className="text-sm leading-relaxed">{g.hashtagSuggestions.join(" ")}</p>
+          </SectionCard>
+        ) : null}
 
-        <SectionCard title="5. Google Business Profile posts">
-          <BlockList items={g.googlePosts} />
-        </SectionCard>
+        {selectedOutputs.googleBusinessPosts && g.googlePosts && (
+          <SectionCard title="Google Business Profile posts">
+            <BlockList items={g.googlePosts} />
+          </SectionCard>
+        )}
 
-        <SectionCard title="6. Flyer copy" action={<CopyButton text={flyerText(kit)} />}>
-          <div className="space-y-3 text-sm">
-            <div>
-              <div className="text-xs uppercase tracking-wider text-muted-foreground">Headline</div>
-              <div className="font-display text-2xl text-foreground">{g.flyer.headline}</div>
-            </div>
-            <div>
-              <div className="text-xs uppercase tracking-wider text-muted-foreground">
-                Subheadline
-              </div>
-              <div className="text-base">{g.flyer.subheadline}</div>
-            </div>
-            <ul className="list-disc pl-5 space-y-1">
-              {g.flyer.bullets.map((b, i) => (
-                <li key={i}>{b}</li>
-              ))}
-            </ul>
-            <div className="rounded-lg bg-accent/10 px-3 py-2 text-accent-foreground/90">
-              <strong>CTA:</strong> {g.flyer.cta}
-            </div>
-            <div className="text-muted-foreground">{g.flyer.contact}</div>
-          </div>
-        </SectionCard>
-
-        <SectionCard title="7. Email newsletter" action={<CopyButton text={emailText(kit)} />}>
-          <div className="flex flex-col gap-3 text-sm">
-            <Info label="Subject line" value={g.emailNewsletter.subject} />
-            <Info label="Preview text" value={g.emailNewsletter.previewText} />
-            <Info label="Email body" value={g.emailNewsletter.body} />
-            <Info label="CTA" value={g.emailNewsletter.cta} />
-          </div>
-        </SectionCard>
-
-        <SectionCard title="8. Review request messages">
-          <BlockList items={g.reviewRequests} />
-        </SectionCard>
-
-        <SectionCard
-          title="9. Website section copy"
-          action={
-            <CopyButton
-              text={`${g.websiteCopy.headline}\n\n${g.websiteCopy.paragraph}\n\n[${g.websiteCopy.button}]`}
-            />
-          }
-        >
-          <div className="space-y-2">
-            <div className="font-display text-xl">{g.websiteCopy.headline}</div>
-            <p className="text-sm">{g.websiteCopy.paragraph}</p>
-            <Button size="sm" className="mt-2">
-              {g.websiteCopy.button}
-            </Button>
-          </div>
-        </SectionCard>
-
-        <SectionCard title="10. Simple ad copy" action={<CopyButton text={adText(kit)} />}>
-          <div className="space-y-2 text-sm">
-            <Info label="Headline" value={g.adCopy.headline} />
-            <Info label="Primary text" value={g.adCopy.primary} />
-            <Info label="Description" value={g.adCopy.description} />
-            <Info label="CTA button" value={g.adCopy.ctaButton} />
-          </div>
-        </SectionCard>
-
-        <SectionCard
-          title="11. AI image prompt ideas"
-          subtitle="Paste into Canva, ChatGPT, or your favourite tool."
-        >
-          <div className="space-y-3">
-            {g.imagePrompts.map((p, i) => (
-              <div key={i} className="rounded-xl border border-border bg-muted/40 p-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="text-xs uppercase tracking-wider text-muted-foreground">
-                    Prompt {i + 1}
-                  </div>
-                  <CopyButton text={p} />
+        {selectedOutputs.flyerCopy && g.flyer && (
+          <SectionCard title="Flyer copy" action={<CopyButton text={flyerText(kit)} />}>
+            <div className="space-y-3 text-sm">
+              <div>
+                <div className="text-xs uppercase tracking-wider text-muted-foreground">
+                  Headline
                 </div>
-                <p className="mt-1 text-sm whitespace-pre-wrap">{p}</p>
+                <div className="font-display text-2xl text-foreground">{g.flyer.headline}</div>
               </div>
-            ))}
-          </div>
-        </SectionCard>
+              <div>
+                <div className="text-xs uppercase tracking-wider text-muted-foreground">
+                  Subheadline
+                </div>
+                <div className="text-base">{g.flyer.subheadline}</div>
+              </div>
+              <ul className="list-disc pl-5 space-y-1">
+                {g.flyer.bullets.map((b, i) => (
+                  <li key={i}>{b}</li>
+                ))}
+              </ul>
+              <div className="rounded-lg bg-accent/10 px-3 py-2 text-accent-foreground/90">
+                <strong>CTA:</strong> {g.flyer.cta}
+              </div>
+              <div className="text-muted-foreground">{g.flyer.contact}</div>
+            </div>
+          </SectionCard>
+        )}
 
-        <SectionCard title="12. 7-day posting plan">
+        {g.emailNewsletter && (
+          <SectionCard title="Email newsletter" action={<CopyButton text={emailText(kit)} />}>
+            <div className="flex flex-col gap-3 text-sm">
+              <Info label="Subject line" value={g.emailNewsletter.subject} />
+              <Info label="Preview text" value={g.emailNewsletter.previewText} />
+              <Info label="Email body" value={g.emailNewsletter.body} />
+              <Info label="CTA" value={g.emailNewsletter.cta} />
+            </div>
+          </SectionCard>
+        )}
+
+        {selectedOutputs.reviewRequests && g.reviewRequests && (
+          <SectionCard title="Review request messages">
+            <BlockList items={g.reviewRequests} />
+          </SectionCard>
+        )}
+
+        {selectedOutputs.websiteCopy && g.websiteCopy && (
+          <SectionCard
+            title="Website section copy"
+            action={
+              <CopyButton
+                text={`${g.websiteCopy.headline}\n\n${g.websiteCopy.paragraph}\n\n[${g.websiteCopy.button}]`}
+              />
+            }
+          >
+            <div className="space-y-2">
+              <div className="font-display text-xl">{g.websiteCopy.headline}</div>
+              <p className="text-sm">{g.websiteCopy.paragraph}</p>
+              <Button size="sm" className="mt-2">
+                {g.websiteCopy.button}
+              </Button>
+            </div>
+          </SectionCard>
+        )}
+
+        {selectedOutputs.faqContent && g.faqContent && (
+          <SectionCard title="FAQ content">
+            <div className="space-y-3">
+              {g.faqContent.map((item) => (
+                <div
+                  key={item.question}
+                  className="rounded-xl border border-border bg-background p-4"
+                >
+                  <div className="font-medium">{item.question}</div>
+                  <p className="mt-1 text-sm text-muted-foreground">{item.answer}</p>
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+        )}
+
+        {selectedOutputs.adCopy && g.adCopy && (
+          <SectionCard title="Simple ad copy" action={<CopyButton text={adText(kit)} />}>
+            <div className="space-y-2 text-sm">
+              <Info label="Headline" value={g.adCopy.headline} />
+              <Info label="Primary text" value={g.adCopy.primary} />
+              <Info label="Description" value={g.adCopy.description} />
+              <Info label="CTA button" value={g.adCopy.ctaButton} />
+            </div>
+          </SectionCard>
+        )}
+
+        {selectedOutputs.imagePrompts && g.imagePrompts && (
+          <SectionCard
+            title="AI image prompt ideas"
+            subtitle="Paste into Canva, ChatGPT, or your favourite tool."
+          >
+            <div className="space-y-3">
+              {g.imagePrompts.map((p, i) => (
+                <div key={i} className="rounded-xl border border-border bg-muted/40 p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="text-xs uppercase tracking-wider text-muted-foreground">
+                      Prompt {i + 1}
+                    </div>
+                    <CopyButton text={p} />
+                  </div>
+                  <p className="mt-1 text-sm whitespace-pre-wrap">{p}</p>
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+        )}
+
+        {selectedOutputs.videoScripts && g.videoScripts && (
+          <SectionCard title="Short video script ideas">
+            <BlockList items={g.videoScripts} />
+          </SectionCard>
+        )}
+
+        <SectionCard title="7-day campaign calendar">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -359,12 +410,14 @@ function KitPage() {
           </div>
         </SectionCard>
 
-        <SectionCard
-          title="13. Printable summary"
-          subtitle="Use your browser's Print to save as PDF."
-        >
-          <PrintableSummary kit={kit} headerProfile={headerProfile} logoUrl={logoUrl} />
-        </SectionCard>
+        {showPrintableSummary && (
+          <SectionCard
+            title="Printable summary"
+            subtitle="Use your browser's Print to save as PDF."
+          >
+            <PrintableSummary kit={kit} headerProfile={headerProfile} logoUrl={logoUrl} />
+          </SectionCard>
+        )}
 
         {settings?.showServiceCta && (
           <div className="no-print rounded-2xl border border-accent/20 bg-accent/10 p-5 text-sm flex flex-col sm:flex-row sm:items-center gap-3">
@@ -458,18 +511,20 @@ function PrintableSummary({
         <Info label="Business type" value={kit.businessType} />
       </div>
 
-      <div>
-        <div className="font-display text-lg">{g.flyer.headline}</div>
-        <div className="text-sm text-muted-foreground">{g.flyer.subheadline}</div>
-        <ul className="list-disc pl-5 mt-2 text-sm space-y-1">
-          {g.flyer.bullets.map((b, i) => (
-            <li key={i}>{b}</li>
-          ))}
-        </ul>
-        <div className="mt-2 text-sm">
-          <strong>{g.flyer.cta}</strong> · {g.flyer.contact}
+      {g.flyer && (
+        <div>
+          <div className="font-display text-lg">{g.flyer.headline}</div>
+          <div className="text-sm text-muted-foreground">{g.flyer.subheadline}</div>
+          <ul className="list-disc pl-5 mt-2 text-sm space-y-1">
+            {g.flyer.bullets.map((b, i) => (
+              <li key={i}>{b}</li>
+            ))}
+          </ul>
+          <div className="mt-2 text-sm">
+            <strong>{g.flyer.cta}</strong> · {g.flyer.contact}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="text-xs text-muted-foreground border-t border-border pt-3">
         Generated with Rose &amp; Paw — Local Promo Kit Builder
@@ -491,37 +546,70 @@ function summaryText(k: PromoKit) {
 }
 function flyerText(k: PromoKit) {
   const f = k.generatedSections.flyer;
+  if (!f) return "";
   return `${f.headline}\n${f.subheadline}\n\n- ${f.bullets.join("\n- ")}\n\nCTA: ${f.cta}\n${f.contact}`;
 }
 function adText(k: PromoKit) {
   const a = k.generatedSections.adCopy;
+  if (!a) return "";
   return `Headline: ${a.headline}\nPrimary: ${a.primary}\nDescription: ${a.description}\nCTA: ${a.ctaButton}`;
 }
 function emailText(k: PromoKit) {
   const email = k.generatedSections.emailNewsletter;
+  if (!email) return "";
   return `Subject: ${email.subject}\nPreview: ${email.previewText}\n\n${email.body}\n\nCTA: ${email.cta}`;
 }
 function buildFullText(k: PromoKit) {
   const g = k.generatedSections;
+  const outputs = k.formInputs.selectedOutputs || legacyOutputs;
   const sec = (title: string, body: string) => `=== ${title} ===\n${body}\n`;
   return [
     sec("CAMPAIGN SUMMARY", summaryText(k)),
-    sec("FACEBOOK POSTS", g.facebookPosts.map((p) => `[${p.label}]\n${p.text}`).join("\n\n")),
-    sec(
-      "INSTAGRAM CAPTIONS",
-      g.instagramCaptions.map((p) => `[${p.label}]\n${p.text}`).join("\n\n"),
-    ),
-    sec("HASHTAG SUGGESTIONS", g.hashtagSuggestions.join(" ")),
-    sec("GOOGLE BUSINESS POSTS", g.googlePosts.map((p) => `[${p.label}]\n${p.text}`).join("\n\n")),
-    sec("FLYER COPY", flyerText(k)),
-    sec("EMAIL NEWSLETTER", emailText(k)),
-    sec("REVIEW REQUESTS", g.reviewRequests.map((p) => `[${p.label}]\n${p.text}`).join("\n\n")),
-    sec(
-      "WEBSITE COPY",
-      `${g.websiteCopy.headline}\n\n${g.websiteCopy.paragraph}\n\n[${g.websiteCopy.button}]`,
-    ),
-    sec("AD COPY", adText(k)),
-    sec("IMAGE PROMPT IDEAS", g.imagePrompts.map((p, i) => `Prompt ${i + 1}: ${p}`).join("\n\n")),
+    outputs.facebookPosts && g.facebookPosts
+      ? sec("FACEBOOK POSTS", g.facebookPosts.map((p) => `[${p.label}]\n${p.text}`).join("\n\n"))
+      : "",
+    outputs.instagramCaptions && g.instagramCaptions
+      ? sec(
+          "INSTAGRAM CAPTIONS",
+          g.instagramCaptions.map((p) => `[${p.label}]\n${p.text}`).join("\n\n"),
+        )
+      : "",
+    outputs.instagramCaptions && g.hashtagSuggestions?.length
+      ? sec("HASHTAG SUGGESTIONS", g.hashtagSuggestions.join(" "))
+      : "",
+    outputs.googleBusinessPosts && g.googlePosts
+      ? sec(
+          "GOOGLE BUSINESS POSTS",
+          g.googlePosts.map((p) => `[${p.label}]\n${p.text}`).join("\n\n"),
+        )
+      : "",
+    outputs.flyerCopy && g.flyer ? sec("FLYER COPY", flyerText(k)) : "",
+    g.emailNewsletter ? sec("EMAIL NEWSLETTER", emailText(k)) : "",
+    outputs.reviewRequests && g.reviewRequests
+      ? sec("REVIEW REQUESTS", g.reviewRequests.map((p) => `[${p.label}]\n${p.text}`).join("\n\n"))
+      : "",
+    outputs.websiteCopy && g.websiteCopy
+      ? sec(
+          "WEBSITE COPY",
+          `${g.websiteCopy.headline}\n\n${g.websiteCopy.paragraph}\n\n[${g.websiteCopy.button}]`,
+        )
+      : "",
+    outputs.faqContent && g.faqContent
+      ? sec(
+          "FAQ CONTENT",
+          g.faqContent.map((item) => `${item.question}\n${item.answer}`).join("\n\n"),
+        )
+      : "",
+    outputs.adCopy && g.adCopy ? sec("AD COPY", adText(k)) : "",
+    outputs.imagePrompts && g.imagePrompts
+      ? sec(
+          "IMAGE PROMPT IDEAS",
+          g.imagePrompts.map((p, i) => `Prompt ${i + 1}: ${p}`).join("\n\n"),
+        )
+      : "",
+    outputs.videoScripts && g.videoScripts
+      ? sec("VIDEO SCRIPT IDEAS", g.videoScripts.map((p) => `[${p.label}]\n${p.text}`).join("\n\n"))
+      : "",
     sec(
       "7-DAY POSTING PLAN",
       g.postingPlan
@@ -530,5 +618,7 @@ function buildFullText(k: PromoKit) {
         )
         .join("\n"),
     ),
-  ].join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }

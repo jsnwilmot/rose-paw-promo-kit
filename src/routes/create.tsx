@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,7 +25,13 @@ import {
   type PromoKit,
 } from "@/lib/storage";
 import { BrandHeader } from "@/components/BrandHeader";
-import { Sparkles } from "lucide-react";
+import {
+  allOutputs,
+  hasContentOutput,
+  OUTPUT_OPTIONS,
+  recommendedOutputs,
+} from "@/lib/output-selection";
+import { CalendarCheck, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/create")({
@@ -77,6 +84,7 @@ function emptyForm(profile: BusinessProfile, settings: AppSettings): PromoFormIn
     callToAction: "",
     extraNotes: "",
     useLogo: !!profile.logoDataUrl,
+    selectedOutputs: { ...recommendedOutputs },
   };
 }
 
@@ -85,7 +93,11 @@ function CreatePage() {
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [form, setForm] = useState<PromoFormInputs | null>(null);
-  const [errors, setErrors] = useState<{ campaignName?: string; endDate?: string }>({});
+  const [errors, setErrors] = useState<{
+    campaignName?: string;
+    endDate?: string;
+    outputs?: string;
+  }>({});
 
   useEffect(() => {
     const p = loadProfile();
@@ -120,6 +132,9 @@ function CreatePage() {
     if (!form.campaignName.trim()) nextErrors.campaignName = "Campaign name is required.";
     if (form.startDate && form.endDate && form.endDate < form.startDate) {
       nextErrors.endDate = "End date cannot be before the start date.";
+    }
+    if (!form.selectedOutputs || !hasContentOutput(form.selectedOutputs)) {
+      nextErrors.outputs = "Choose at least one content output to generate a useful marketing kit.";
     }
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) {
@@ -318,6 +333,81 @@ function CreatePage() {
                 />
               </Field>
             </div>
+          </section>
+
+          <section className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-card space-y-5">
+            <div>
+              <h2 className="font-display text-xl font-semibold">Choose your kit outputs</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Pick the content you actually need. Your campaign calendar will be built around
+                these choices.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => up("selectedOutputs", { ...recommendedOutputs })}
+              >
+                Select recommended
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => up("selectedOutputs", { ...allOutputs })}
+              >
+                Select all
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() =>
+                  up(
+                    "selectedOutputs",
+                    Object.fromEntries(
+                      OUTPUT_OPTIONS.map(({ key }) => [key, false]),
+                    ) as typeof allOutputs,
+                  )
+                }
+              >
+                Clear optional outputs
+              </Button>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {OUTPUT_OPTIONS.map(({ key, label }) => (
+                <label
+                  key={key}
+                  className="flex cursor-pointer items-center gap-3 rounded-xl border border-border bg-muted/30 p-4 text-sm"
+                >
+                  <Checkbox
+                    checked={form.selectedOutputs?.[key] ?? false}
+                    onCheckedChange={(checked) => {
+                      up("selectedOutputs", {
+                        ...(form.selectedOutputs || recommendedOutputs),
+                        [key]: checked === true,
+                      });
+                      setErrors((previous) => ({ ...previous, outputs: undefined }));
+                    }}
+                    aria-label={label}
+                  />
+                  <span>{label}</span>
+                </label>
+              ))}
+              <div className="flex items-center gap-3 rounded-xl border border-accent/30 bg-accent/10 p-4 text-sm">
+                <CalendarCheck className="size-5 text-accent" />
+                <div>
+                  <div className="font-medium">Campaign calendar included</div>
+                  <div className="text-xs text-muted-foreground">Always included</div>
+                </div>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Campaign calendar is always included so you can see the recommended marketing flow.
+            </p>
+            {errors.outputs && <p className="text-sm text-destructive">{errors.outputs}</p>}
           </section>
 
           <section className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-card">

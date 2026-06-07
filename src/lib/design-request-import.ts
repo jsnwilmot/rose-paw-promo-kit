@@ -9,6 +9,7 @@ import {
   type PromoFormInputs,
   type PromoKit,
 } from "./storage";
+import { normalizeSelectedOutputs } from "./output-selection";
 
 const EXPECTED_PACKAGE_TYPE = "rose-paw-design-help-request";
 const EXPECTED_PACKAGE_VERSION = 1;
@@ -175,7 +176,8 @@ export function mapRequestPackageToSavedKit(
   const importedKit = packageData.promoKit;
   const importedProfile = mapRequestBusinessProfileToProfile(packageData);
   const formInputs =
-    parsePromoFormInputs(importedKit.formInputs) || buildFallbackFormInputs(packageData);
+    parsePromoFormInputs(withImportedSelectedOutputs(importedKit)) ||
+    buildFallbackFormInputs(packageData);
   const generatedSections =
     parseGeneratedSections(importedKit.generatedSections) ||
     generateKit(formInputs, importedProfile, options.settings);
@@ -259,7 +261,21 @@ function buildFallbackFormInputs(packageData: DesignRequestPackage): PromoFormIn
     callToAction: "",
     extraNotes: storedText(packageData.customNotes),
     useLogo: false,
+    selectedOutputs: packageData.promoKit.selectedOutputs
+      ? normalizeSelectedOutputs(packageData.promoKit.selectedOutputs)
+      : undefined,
   };
+}
+
+function withImportedSelectedOutputs(importedKit: Record<string, unknown>) {
+  if (!importedKit.formInputs || typeof importedKit.formInputs !== "object") {
+    return importedKit.formInputs;
+  }
+  const formInputs = importedKit.formInputs as Record<string, unknown>;
+  const selectedOutputs = formInputs.selectedOutputs || importedKit.selectedOutputs;
+  return selectedOutputs
+    ? { ...formInputs, selectedOutputs: normalizeSelectedOutputs(selectedOutputs) }
+    : formInputs;
 }
 
 function text(value: unknown) {

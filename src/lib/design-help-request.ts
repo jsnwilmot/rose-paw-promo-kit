@@ -1,5 +1,6 @@
 import { APP_DOMAIN, WEB3FORMS_ACCESS_KEY } from "./app-config";
 import type { AppSettings, BusinessProfile, PromoKit } from "./storage";
+import { legacyOutputs, selectedOutputLabels } from "./output-selection";
 
 export const DESIGN_SERVICE_OPTIONS = [
   "Branded social media graphics",
@@ -57,13 +58,16 @@ export function buildDesignHelpMessage({
   createdAt = new Date().toISOString(),
 }: Omit<BuildRequestPackageArgs, "settings">) {
   const generated = kit.generatedSections;
-  const flyerCopy = [
-    generated.flyer.headline,
-    generated.flyer.subheadline,
-    formatBulletList(generated.flyer.bullets),
-    `Call to action: ${formatValue(generated.flyer.cta)}`,
-    `Contact: ${formatValue(generated.flyer.contact)}`,
-  ].join("\n");
+  const outputs = kit.formInputs.selectedOutputs || legacyOutputs;
+  const flyerCopy = generated.flyer
+    ? [
+        generated.flyer.headline,
+        generated.flyer.subheadline,
+        formatBulletList(generated.flyer.bullets),
+        `Call to action: ${formatValue(generated.flyer.cta)}`,
+        `Contact: ${formatValue(generated.flyer.contact)}`,
+      ].join("\n")
+    : "Not selected";
   const calendar = generated.postingPlan.length
     ? generated.postingPlan
         .map(
@@ -72,6 +76,37 @@ export function buildDesignHelpMessage({
         )
         .join("\n")
     : "Not provided";
+  const generatedSummary = [
+    outputs.flyerCopy && generated.flyer ? `Flyer copy:\n${flyerCopy}` : "",
+    outputs.facebookPosts && generated.facebookPosts
+      ? `Primary Facebook post:\n${formatValue(generated.facebookPosts[0]?.text)}`
+      : "",
+    outputs.instagramCaptions && generated.instagramCaptions
+      ? `Primary Instagram caption:\n${formatValue(generated.instagramCaptions[0]?.text)}`
+      : "",
+    outputs.googleBusinessPosts && generated.googlePosts
+      ? `Google Business Profile post:\n${formatValue(generated.googlePosts[0]?.text)}`
+      : "",
+    outputs.reviewRequests && generated.reviewRequests
+      ? `Review request:\n${formatValue(generated.reviewRequests[0]?.text)}`
+      : "",
+    outputs.websiteCopy && generated.websiteCopy
+      ? `Website copy:\n${formatValue(generated.websiteCopy.headline)}\n${formatValue(generated.websiteCopy.paragraph)}`
+      : "",
+    outputs.faqContent && generated.faqContent
+      ? `FAQ content:\n${generated.faqContent.map((item) => `${item.question}: ${item.answer}`).join("\n")}`
+      : "",
+    outputs.adCopy && generated.adCopy ? `Ad copy:\n${formatValue(generated.adCopy.primary)}` : "",
+    outputs.imagePrompts && generated.imagePrompts
+      ? `Image prompt:\n${formatValue(generated.imagePrompts[0])}`
+      : "",
+    outputs.videoScripts && generated.videoScripts
+      ? `Video script:\n${formatValue(generated.videoScripts[0]?.text)}`
+      : "",
+    `Campaign calendar:\n${calendar}`,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 
   return `Rose & Paw Design Help Request
 
@@ -115,6 +150,10 @@ Audience: ${formatValue(kit.formInputs.targetCustomer || generated.summary.audie
 Offer: ${formatValue(kit.formInputs.offer)}
 Call to action: ${formatValue(kit.formInputs.callToAction || generated.summary.recommendedCta)}
 
+SELECTED KIT OUTPUTS
+${formatBulletList(selectedOutputLabels(outputs))}
+Campaign calendar: Included
+
 REQUESTED DESIGN HELP
 ${formatBulletList(selectedServices)}
 
@@ -123,26 +162,7 @@ ${formatValue(customNotes)}
 
 GENERATED KIT SUMMARY
 
-Headline:
-${formatValue(generated.flyer.headline)}
-
-Primary post copy:
-${formatValue(generated.facebookPosts[0]?.text)}
-
-Google Business Profile post:
-${formatValue(generated.googlePosts[0]?.text)}
-
-Flyer copy:
-${flyerCopy}
-
-Review request:
-${formatValue(generated.reviewRequests[0]?.text)}
-
-Image prompt:
-${formatValue(generated.imagePrompts[0])}
-
-Campaign calendar:
-${calendar}
+${generatedSummary}
 
 NEXT STEP
 Please review this request and follow up with the requester by email.`;
@@ -196,6 +216,7 @@ export function buildDesignHelpRequestPackage({
       updatedAt: kit.updatedAt,
       status: kit.status,
       formInputs: kit.formInputs,
+      selectedOutputs: kit.formInputs.selectedOutputs || legacyOutputs,
       generatedSections: kit.generatedSections,
       useLogo: kit.useLogo,
       logoSnapshotIncluded: !!kit.logoSnapshotDataUrl,
@@ -228,6 +249,10 @@ export function buildDesignHelpFormData(
     service_area: businessProfile.serviceArea,
     selected_kit_id: promoKit.id,
     campaign_goal: promoKit.campaignGoal,
+    selected_kit_outputs: selectedOutputLabels(
+      promoKit.formInputs.selectedOutputs || legacyOutputs,
+    ).join(", "),
+    campaign_calendar: "Included",
     request_created_at: requestPackage.createdAt,
   };
 

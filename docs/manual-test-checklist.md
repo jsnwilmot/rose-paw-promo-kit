@@ -1,5 +1,24 @@
 # Manual Test Checklist
 
+## Marketing kit output selection
+
+- Open Create Promo Kit and confirm recommended outputs are selected by default.
+- Confirm Select recommended, Select all, and Clear optional outputs work.
+- Confirm Campaign Calendar is shown as always included and is not a checkbox.
+- Clear outputs, select only Printable summary, submit, and confirm the useful-content warning.
+- Generate a Facebook-only kit and confirm only Facebook, campaign summary, and the seven-day
+  Facebook-focused calendar appear.
+- Generate a Facebook and Google Business Profile kit and confirm the calendar uses only those
+  channels.
+- Generate flyer-only, review-request-only, and website-copy-only kits and confirm each calendar
+  focuses on the selected output without mentioning unselected platforms.
+- Confirm no empty cards appear for unselected output sections.
+- Open a legacy kit without `selectedOutputs` and confirm its historical sections and calendar load.
+- Confirm Design Help Request lists selected outputs, says Campaign calendar is included, and its
+  downloaded package preserves `selectedOutputs`.
+- Import a design request package with `campaignCalendar: false` and confirm the calendar remains.
+- Export and import a backup and confirm each kit's selected outputs remain unchanged.
+
 ## Import Design Request
 
 - Download a design request package JSON from an existing generated kit.

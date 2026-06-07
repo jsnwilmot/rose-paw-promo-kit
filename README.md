@@ -13,6 +13,10 @@ internal working notes, and a non-destructive archive and restore flow. Imported
 are clearly labeled and can be found by requester name, requester email, or requested services.
 Requests can import a downloaded client design-request package JSON, preview its business and
 campaign details, create a new local saved kit, and optionally update the active business profile.
+Campaign Builder output selection lets each kit focus on the content a client actually uses.
+Facebook, Instagram, Google Business Profile, flyer, review, website, FAQ, ad, image-prompt, video,
+and printable-summary outputs are optional, while every kit always includes a seven-day campaign
+calendar built around the selected channels.
 
 ## Privacy and local storage
 

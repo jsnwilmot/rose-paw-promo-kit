@@ -2,6 +2,8 @@
 
 ## June 2026
 
+- Added Campaign Builder output selection with recommended defaults and a mandatory seven-day
+  calendar that adapts to the selected content and channels.
 - Improved Saved Kits so imported requests are labeled and searchable by requester details and
   requested services.
 - Added an internal Requests page for validating, previewing, and importing downloaded client design
