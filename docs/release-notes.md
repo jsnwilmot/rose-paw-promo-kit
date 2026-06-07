@@ -2,6 +2,8 @@
 
 ## June 2026
 
+- Improved Saved Kits so imported requests are labeled and searchable by requester details and
+  requested services.
 - Added an internal Requests page for validating, previewing, and importing downloaded client design
   request packages into new saved kits with optional active-profile replacement.
 - Improved Saved Kits with combined search, business and campaign filters, sorting, duplication,

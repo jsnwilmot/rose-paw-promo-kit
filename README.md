@@ -9,7 +9,8 @@ natural calls to action, scannable flyer bullets, and intentional seven-day camp
 Business Profile includes local-business presets for quickly starting with realistic sample details
 while keeping saved promo kits and uploaded logo data unchanged.
 Saved Kits includes combined search, business and campaign filters, sorting, duplication, rename,
-internal working notes, and a non-destructive archive and restore flow.
+internal working notes, and a non-destructive archive and restore flow. Imported design requests
+are clearly labeled and can be found by requester name, requester email, or requested services.
 Requests can import a downloaded client design-request package JSON, preview its business and
 campaign details, create a new local saved kit, and optionally update the active business profile.
 

@@ -374,6 +374,9 @@ function KitCard({
             {kit.businessName || "Unnamed business"}
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
+            {kit.source === "design-request-import" && (
+              <Badge variant="outline">Imported request</Badge>
+            )}
             <Badge variant="secondary" className="capitalize">
               {kit.status}
             </Badge>
@@ -404,7 +407,7 @@ function KitCard({
           <Pencil className="size-3.5" /> Rename
         </Button>
         <Button size="sm" variant="outline" onClick={onNotes} className="gap-1.5">
-          <StickyNote className="size-3.5" /> Notes
+          <StickyNote className="size-3.5" /> Edit notes
         </Button>
         {kit.status === "archived" ? (
           <Button size="sm" variant="outline" onClick={onRestore} className="gap-1.5">
@@ -461,6 +464,9 @@ function kitSearchText(kit: PromoKit) {
     kit.businessType,
     kit.campaignGoal,
     kit.formInputs.location,
+    kit.requesterName,
+    kit.requesterEmail,
+    kit.requestedServices?.join(" "),
     kit.internalNotes,
   ]
     .join(" ")

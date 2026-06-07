@@ -20,6 +20,8 @@
 ## Saved kit management
 
 - Open Saved Kits with existing campaigns and confirm archived kits are hidden by default.
+- Confirm imported design request kits show an `Imported request` label.
+- Search for an imported request by requester name, requester email, and requested service.
 - Search by campaign name, business name, business type, campaign goal, service area, and internal
   notes.
 - Combine search with the business and campaign goal or type filters.
