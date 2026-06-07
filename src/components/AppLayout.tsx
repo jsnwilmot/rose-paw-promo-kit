@@ -4,6 +4,7 @@ import {
   Store,
   Sparkles,
   FolderHeart,
+  Inbox,
   Settings as SettingsIcon,
   Menu,
 } from "lucide-react";
@@ -22,6 +23,7 @@ const nav = [
   { to: "/profile", label: "Business Profile", icon: Store },
   { to: "/create", label: "Create Promo Kit", icon: Sparkles },
   { to: "/kits", label: "Saved Kits", icon: FolderHeart },
+  { to: "/requests", label: "Requests", icon: Inbox },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ] as const;
 

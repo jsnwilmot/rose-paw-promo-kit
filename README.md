@@ -10,6 +10,8 @@ Business Profile includes local-business presets for quickly starting with reali
 while keeping saved promo kits and uploaded logo data unchanged.
 Saved Kits includes combined search, business and campaign filters, sorting, duplication, rename,
 internal working notes, and a non-destructive archive and restore flow.
+Requests can import a downloaded client design-request package JSON, preview its business and
+campaign details, create a new local saved kit, and optionally update the active business profile.
 
 ## Privacy and local storage
 
@@ -28,6 +30,9 @@ through Web3Forms. Nothing is sent until the user completes the consent checkbox
 form. Web3Forms receives one readable plain-text request summary plus a compact set of searchable
 fields. Raw JSON and base64 logo data are excluded. Users can copy the same readable message or
 manually download the full structured request package as a JSON fallback.
+The internal Requests page can import that structured package later. Imported packages always
+create a new local kit ID, ignore raw logo data, and never replace the active profile without
+explicit confirmation.
 
 ## Development
 

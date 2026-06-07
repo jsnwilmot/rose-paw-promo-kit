@@ -2,6 +2,8 @@
 
 ## June 2026
 
+- Added an internal Requests page for validating, previewing, and importing downloaded client design
+  request packages into new saved kits with optional active-profile replacement.
 - Improved Saved Kits with combined search, business and campaign filters, sorting, duplication,
   internal notes, and non-destructive archive and restore actions.
 - Added seven local business profile presets with a confirmation step that updates only the active

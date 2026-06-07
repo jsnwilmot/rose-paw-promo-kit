@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as RequestsRouteImport } from './routes/requests'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as KitsRouteImport } from './routes/kits'
 import { Route as CreateRouteImport } from './routes/create'
@@ -19,6 +20,11 @@ import { Route as KitIdRouteImport } from './routes/kit.$id'
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RequestsRoute = RequestsRouteImport.update({
+  id: '/requests',
+  path: '/requests',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/create': typeof CreateRoute
   '/kits': typeof KitsRoute
   '/profile': typeof ProfileRoute
+  '/requests': typeof RequestsRoute
   '/settings': typeof SettingsRoute
   '/kit/$id': typeof KitIdRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/create': typeof CreateRoute
   '/kits': typeof KitsRoute
   '/profile': typeof ProfileRoute
+  '/requests': typeof RequestsRoute
   '/settings': typeof SettingsRoute
   '/kit/$id': typeof KitIdRoute
 }
@@ -69,20 +77,36 @@ export interface FileRoutesById {
   '/create': typeof CreateRoute
   '/kits': typeof KitsRoute
   '/profile': typeof ProfileRoute
+  '/requests': typeof RequestsRoute
   '/settings': typeof SettingsRoute
   '/kit/$id': typeof KitIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/create' | '/kits' | '/profile' | '/settings' | '/kit/$id'
+  fullPaths:
+    | '/'
+    | '/create'
+    | '/kits'
+    | '/profile'
+    | '/requests'
+    | '/settings'
+    | '/kit/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/create' | '/kits' | '/profile' | '/settings' | '/kit/$id'
+  to:
+    | '/'
+    | '/create'
+    | '/kits'
+    | '/profile'
+    | '/requests'
+    | '/settings'
+    | '/kit/$id'
   id:
     | '__root__'
     | '/'
     | '/create'
     | '/kits'
     | '/profile'
+    | '/requests'
     | '/settings'
     | '/kit/$id'
   fileRoutesById: FileRoutesById
@@ -92,6 +116,7 @@ export interface RootRouteChildren {
   CreateRoute: typeof CreateRoute
   KitsRoute: typeof KitsRoute
   ProfileRoute: typeof ProfileRoute
+  RequestsRoute: typeof RequestsRoute
   SettingsRoute: typeof SettingsRoute
   KitIdRoute: typeof KitIdRoute
 }
@@ -103,6 +128,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/requests': {
+      id: '/requests'
+      path: '/requests'
+      fullPath: '/requests'
+      preLoaderRoute: typeof RequestsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -148,6 +180,7 @@ const rootRouteChildren: RootRouteChildren = {
   CreateRoute: CreateRoute,
   KitsRoute: KitsRoute,
   ProfileRoute: ProfileRoute,
+  RequestsRoute: RequestsRoute,
   SettingsRoute: SettingsRoute,
   KitIdRoute: KitIdRoute,
 }

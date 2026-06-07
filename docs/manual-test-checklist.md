@@ -1,5 +1,22 @@
 # Manual Test Checklist
 
+## Import Design Request
+
+- Download a design request package JSON from an existing generated kit.
+- Open Requests and upload the JSON; repeat by pasting the same JSON.
+- Confirm the preview shows requester, business, service area, colours, kit, requested services,
+  generated-section status, and logo-metadata status.
+- Import with the default options and confirm a new active saved kit opens with generated content.
+- Confirm existing saved kits and the current active profile are unchanged by the default import.
+- Import again with profile replacement selected and confirm the warning appears before applying.
+- Confirm profile replacement preserves the current uploaded local logo data.
+- Confirm invalid JSON, unsupported package type, and missing or unsupported version show clear
+  errors.
+- Confirm raw base64 logo data in an input package is not stored.
+- Export and import a backup containing an imported request kit and confirm its source metadata and
+  internal notes remain.
+- Confirm Design Help Request and business profile presets still work after importing.
+
 ## Saved kit management
 
 - Open Saved Kits with existing campaigns and confirm archived kits are hidden by default.

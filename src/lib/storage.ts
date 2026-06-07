@@ -87,6 +87,14 @@ export type PromoKit = {
   logoSnapshotFileName: string;
   status: KitStatus;
   internalNotes: string;
+  source?: "design-request-import";
+  sourcePackageVersion?: number;
+  sourceImportedAt?: string;
+  sourceCreatedAt?: string;
+  requesterName?: string;
+  requesterEmail?: string;
+  requestedServices?: string[];
+  customNotes?: string;
 };
 
 export type AppSettings = {
@@ -281,6 +289,14 @@ const promoKitSchema = z.object({
   logoSnapshotFileName: z.string().default(""),
   status: z.enum(["draft", "active", "completed", "archived"]).default("draft"),
   internalNotes: z.string().default(""),
+  source: z.literal("design-request-import").optional(),
+  sourcePackageVersion: z.number().int().optional(),
+  sourceImportedAt: isoDateTime.optional(),
+  sourceCreatedAt: isoDateTime.optional(),
+  requesterName: z.string().optional(),
+  requesterEmail: z.string().optional(),
+  requestedServices: z.array(z.string()).optional(),
+  customNotes: z.string().optional(),
 });
 
 const appSettingsSchema = z.object({
@@ -422,6 +438,16 @@ export function deleteKit(id: string): StorageResult {
 
 export function getKit(id: string): PromoKit | undefined {
   return loadKits().find((kit) => kit.id === id);
+}
+
+export function parsePromoFormInputs(value: unknown): PromoFormInputs | null {
+  const result = promoFormInputsSchema.safeParse(value);
+  return result.success ? result.data : null;
+}
+
+export function parseGeneratedSections(value: unknown): GeneratedSections | null {
+  const result = generatedSectionsSchema.safeParse(value);
+  return result.success ? result.data : null;
 }
 
 export function loadSettings(): AppSettings {
