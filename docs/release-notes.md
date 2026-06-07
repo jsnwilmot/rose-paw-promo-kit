@@ -2,6 +2,8 @@
 
 ## June 2026
 
+- Added seven local business profile presets with a confirmation step that updates only the active
+  profile and preserves existing saved kits.
 - Improved local promo kit copy with shorter social posts, direct Google Business Profile updates,
   cleaner flyer bullets, natural review requests, and campaign-calendar purposes.
 - Design help request emails are now formatted as readable plain-text briefs instead of raw JSON

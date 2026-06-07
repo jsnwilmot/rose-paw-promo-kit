@@ -2,6 +2,16 @@ import { createFileRoute } from "@tanstack/react-router";
 import { cloneElement, isValidElement, useEffect, useRef, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,7 +22,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Upload, Trash2, ImageOff } from "lucide-react";
+import { Upload, Trash2, ImageOff, Store } from "lucide-react";
+import {
+  applyBusinessPresetToProfile,
+  getBusinessPresets,
+  type BusinessPreset,
+} from "@/data/businessPresets";
 import {
   emptyProfile,
   fileToDataUrl,
@@ -43,10 +58,12 @@ const TONES = [
 ];
 const ALLOWED = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
 const MAX_BYTES = 2 * 1024 * 1024;
+const BUSINESS_PRESETS = getBusinessPresets();
 
 function ProfilePage() {
   const [p, setP] = useState<BusinessProfile>(emptyProfile);
   const [loaded, setLoaded] = useState(false);
+  const [pendingPreset, setPendingPreset] = useState<BusinessPreset | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -102,6 +119,19 @@ function ProfilePage() {
     toast.success("Business profile saved.");
   }
 
+  function applyPreset() {
+    if (!pendingPreset) return;
+    const nextProfile = applyBusinessPresetToProfile(p, pendingPreset);
+    const result = saveProfile(nextProfile);
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    setP(nextProfile);
+    setPendingPreset(null);
+    toast.success("Profile preset loaded. Review and adjust the details before generating a kit.");
+  }
+
   if (!loaded)
     return (
       <AppLayout>
@@ -123,6 +153,46 @@ function ProfilePage() {
             We'll reuse this every time you create a promo kit.
           </p>
         </header>
+
+        <section className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-card space-y-4">
+          <div>
+            <h2 className="font-display text-xl font-semibold">Start from a preset</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Load a realistic sample business or common client type, then adjust the details.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {BUSINESS_PRESETS.map((preset) => (
+              <article
+                key={preset.businessName}
+                className="flex h-full flex-col rounded-xl border border-border bg-muted/25 p-4"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="rounded-lg bg-accent/10 p-2 text-accent">
+                    <Store className="size-4" aria-hidden="true" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="font-semibold">{preset.businessName}</h3>
+                    <p className="mt-0.5 text-xs font-medium uppercase tracking-wide text-accent">
+                      {preset.businessType}
+                    </p>
+                  </div>
+                </div>
+                <p className="mt-3 flex-1 text-sm leading-relaxed text-muted-foreground">
+                  {preset.businessDescription}
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mt-4 w-full"
+                  onClick={() => setPendingPreset(preset)}
+                >
+                  Load sample profile
+                </Button>
+              </article>
+            ))}
+          </div>
+        </section>
 
         <form onSubmit={onSubmit} className="space-y-6">
           <section className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-card space-y-4">
@@ -315,6 +385,30 @@ function ProfilePage() {
             </Button>
           </div>
         </form>
+
+        <AlertDialog
+          open={!!pendingPreset}
+          onOpenChange={(open) => !open && setPendingPreset(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Replace current business profile?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will replace your current business profile fields. Saved kits will not be
+                changed.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            {pendingPreset && (
+              <p className="rounded-lg bg-muted p-3 text-sm">
+                Selected preset: <strong>{pendingPreset.businessName}</strong>
+              </p>
+            )}
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={applyPreset}>Replace current profile</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </AppLayout>
   );

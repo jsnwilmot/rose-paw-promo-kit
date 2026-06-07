@@ -6,6 +6,8 @@ Generated kits preserve the logo used at creation time, use extra campaign notes
 and can be marked Draft, Active, or Completed. Saved-kit deletion includes a short Undo action.
 Copy generation uses short, channel-specific local-business templates that favour clear services,
 natural calls to action, scannable flyer bullets, and intentional seven-day campaign steps.
+Business Profile includes local-business presets for quickly starting with realistic sample details
+while keeping saved promo kits and uploaded logo data unchanged.
 
 ## Privacy and local storage
 

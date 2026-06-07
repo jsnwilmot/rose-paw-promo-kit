@@ -1,5 +1,18 @@
 # Manual Test Checklist
 
+## Business profile presets
+
+- Open Business Profile and confirm all seven presets show a business name, type, and description.
+- Select a preset and confirm the replacement warning appears.
+- Cancel the warning and confirm the current profile fields are unchanged.
+- Apply the Heidi’s Hair Salon preset and confirm its profile fields and brand colours are loaded.
+- Apply the Bear Essential Dog Care preset and confirm its profile fields and brand colours are
+  loaded.
+- Confirm applying a preset preserves the uploaded logo and does not change saved kits or settings.
+- Generate a kit from each real-business preset.
+- Export a backup, import it, and confirm the current active profile is restored.
+- Open Design Help Request and confirm the active preset profile appears in the readable request.
+
 ## Generated content quality
 
 - Generate a kit for a mobile dog groomer with a specific service, service area, and offer.
