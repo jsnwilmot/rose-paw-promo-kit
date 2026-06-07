@@ -67,7 +67,7 @@ export type GeneratedSections = {
   emailNewsletter: { subject: string; previewText: string; body: string; cta: string };
   hashtagSuggestions: string[];
   imagePrompts: string[];
-  postingPlan: { day: string; platform: string; type: string; topic: string }[];
+  postingPlan: { day: string; platform: string; type: string; topic: string; note?: string }[];
 };
 
 export type KitStatus = "draft" | "active" | "completed";
@@ -253,7 +253,15 @@ const generatedSectionsSchema = z.object({
   hashtagSuggestions: z.array(nonEmpty).default([]),
   imagePrompts: z.array(nonEmpty).min(1),
   postingPlan: z
-    .array(z.object({ day: nonEmpty, platform: nonEmpty, type: nonEmpty, topic: nonEmpty }))
+    .array(
+      z.object({
+        day: nonEmpty,
+        platform: nonEmpty,
+        type: nonEmpty,
+        topic: nonEmpty,
+        note: z.string().default(""),
+      }),
+    )
     .min(1),
 });
 

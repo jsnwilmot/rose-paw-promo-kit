@@ -2,6 +2,8 @@
 
 ## June 2026
 
+- Improved local promo kit copy with shorter social posts, direct Google Business Profile updates,
+  cleaner flyer bullets, natural review requests, and campaign-calendar purposes.
 - Design help request emails are now formatted as readable plain-text briefs instead of raw JSON
   data dumps.
 - Added a complete Web3Forms design help request flow with editable messages, requested-service

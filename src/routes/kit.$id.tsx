@@ -216,7 +216,7 @@ function KitPage() {
             <Info label="Campaign" value={g.summary.campaignName} />
             <Info label="Goal" value={g.summary.goal} />
             <Info label="Audience" value={g.summary.audience} />
-            <Info label="Offer" value={g.summary.offer} />
+            {g.summary.offer !== "No offer added" && <Info label="Offer" value={g.summary.offer} />}
             <Info label="Dates" value={g.summary.dates} />
             <Info label="Recommended CTA" value={g.summary.recommendedCta} />
             {g.summary.notes && <Info label="Extra notes used" value={g.summary.notes} />}
@@ -335,7 +335,8 @@ function KitPage() {
                   <th className="py-2 pr-3">Day</th>
                   <th className="py-2 pr-3">Platform</th>
                   <th className="py-2 pr-3">Content type</th>
-                  <th className="py-2">Topic</th>
+                  <th className="py-2 pr-3">Topic</th>
+                  <th className="py-2">Purpose</th>
                 </tr>
               </thead>
               <tbody>
@@ -344,7 +345,10 @@ function KitPage() {
                     <td className="py-2 pr-3 font-medium">{d.day}</td>
                     <td className="py-2 pr-3">{d.platform}</td>
                     <td className="py-2 pr-3">{d.type}</td>
-                    <td className="py-2">{d.topic}</td>
+                    <td className="py-2 pr-3">{d.topic}</td>
+                    <td className="py-2 text-muted-foreground">
+                      {d.note || "Use this touchpoint to support the campaign."}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -446,7 +450,7 @@ function PrintableSummary({
 
       <div className="grid gap-2 text-sm sm:grid-cols-2">
         <Info label="Audience" value={g.summary.audience} />
-        <Info label="Offer" value={g.summary.offer} />
+        {g.summary.offer !== "No offer added" && <Info label="Offer" value={g.summary.offer} />}
         <Info label="Call to action" value={g.summary.recommendedCta} />
         <Info label="Business type" value={kit.businessType} />
       </div>
@@ -473,7 +477,14 @@ function PrintableSummary({
 
 function summaryText(k: PromoKit) {
   const s = k.generatedSections.summary;
-  return `Campaign: ${s.campaignName}\nGoal: ${s.goal}\nAudience: ${s.audience}\nOffer: ${s.offer}\nDates: ${s.dates}\nCTA: ${s.recommendedCta}`;
+  return [
+    `Campaign: ${s.campaignName}`,
+    `Goal: ${s.goal}`,
+    `Audience: ${s.audience}`,
+    ...(s.offer !== "No offer added" ? [`Offer: ${s.offer}`] : []),
+    `Dates: ${s.dates}`,
+    `CTA: ${s.recommendedCta}`,
+  ].join("\n");
 }
 function flyerText(k: PromoKit) {
   const f = k.generatedSections.flyer;
@@ -510,7 +521,11 @@ function buildFullText(k: PromoKit) {
     sec("IMAGE PROMPT IDEAS", g.imagePrompts.map((p, i) => `Prompt ${i + 1}: ${p}`).join("\n\n")),
     sec(
       "7-DAY POSTING PLAN",
-      g.postingPlan.map((d) => `${d.day} — ${d.platform} — ${d.type} — ${d.topic}`).join("\n"),
+      g.postingPlan
+        .map(
+          (d) => `${d.day} — ${d.platform} — ${d.type} — ${d.topic}${d.note ? ` — ${d.note}` : ""}`,
+        )
+        .join("\n"),
     ),
   ].join("\n");
 }

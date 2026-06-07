@@ -68,7 +68,7 @@ export function buildDesignHelpMessage({
     ? generated.postingPlan
         .map(
           (item) =>
-            `${formatValue(item.day)}: ${formatValue(item.platform)} - ${formatValue(item.topic)}`,
+            `${formatValue(item.day)}: ${formatValue(item.platform)} - ${formatValue(item.topic)}${item.note ? ` - ${formatValue(item.note)}` : ""}`,
         )
         .join("\n")
     : "Not provided";

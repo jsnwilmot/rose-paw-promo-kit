@@ -4,6 +4,8 @@ Rose & Paw Local Promo Kit Builder is a local-first MVP for small businesses. A 
 
 Generated kits preserve the logo used at creation time, use extra campaign notes as writing context,
 and can be marked Draft, Active, or Completed. Saved-kit deletion includes a short Undo action.
+Copy generation uses short, channel-specific local-business templates that favour clear services,
+natural calls to action, scannable flyer bullets, and intentional seven-day campaign steps.
 
 ## Privacy and local storage
 
