@@ -17,9 +17,34 @@ export function duplicateKitById(id: string): PromoKit | null {
   const duplicate = {
     ...kit,
     id: crypto.randomUUID(),
-    campaignName: `${kit.campaignName} (copy)`,
+    campaignName: `${kit.campaignName} copy`,
     createdAt: now,
     updatedAt: now,
+    status: "draft" as const,
   };
   return upsertKit(duplicate).ok ? duplicate : null;
+}
+
+export function setKitArchivedById(id: string, archived: boolean): PromoKit | null {
+  const kit = getKit(id);
+  if (!kit) return null;
+
+  const updated = {
+    ...kit,
+    status: archived ? ("archived" as const) : ("active" as const),
+    updatedAt: new Date().toISOString(),
+  };
+  return upsertKit(updated).ok ? updated : null;
+}
+
+export function saveKitInternalNotesById(id: string, internalNotes: string): PromoKit | null {
+  const kit = getKit(id);
+  if (!kit) return null;
+
+  const updated = {
+    ...kit,
+    internalNotes: internalNotes.trim(),
+    updatedAt: new Date().toISOString(),
+  };
+  return upsertKit(updated).ok ? updated : null;
 }

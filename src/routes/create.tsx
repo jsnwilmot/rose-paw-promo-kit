@@ -142,6 +142,7 @@ function CreatePage() {
       logoSnapshotDataUrl: form.useLogo && profile.logoDataUrl ? profile.logoDataUrl : "",
       logoSnapshotFileName: form.useLogo && profile.logoFileName ? profile.logoFileName : "",
       status: "draft",
+      internalNotes: "",
     };
     const result = upsertKit(kit);
     if (!result.ok) {

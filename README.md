@@ -8,6 +8,8 @@ Copy generation uses short, channel-specific local-business templates that favou
 natural calls to action, scannable flyer bullets, and intentional seven-day campaign steps.
 Business Profile includes local-business presets for quickly starting with realistic sample details
 while keeping saved promo kits and uploaded logo data unchanged.
+Saved Kits includes combined search, business and campaign filters, sorting, duplication, rename,
+internal working notes, and a non-destructive archive and restore flow.
 
 ## Privacy and local storage
 

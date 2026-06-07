@@ -70,7 +70,7 @@ export type GeneratedSections = {
   postingPlan: { day: string; platform: string; type: string; topic: string; note?: string }[];
 };
 
-export type KitStatus = "draft" | "active" | "completed";
+export type KitStatus = "draft" | "active" | "completed" | "archived";
 
 export type PromoKit = {
   id: string;
@@ -86,6 +86,7 @@ export type PromoKit = {
   logoSnapshotDataUrl: string;
   logoSnapshotFileName: string;
   status: KitStatus;
+  internalNotes: string;
 };
 
 export type AppSettings = {
@@ -278,7 +279,8 @@ const promoKitSchema = z.object({
   useLogo: z.boolean(),
   logoSnapshotDataUrl: logoDataUrl.default(""),
   logoSnapshotFileName: z.string().default(""),
-  status: z.enum(["draft", "active", "completed"]).default("draft"),
+  status: z.enum(["draft", "active", "completed", "archived"]).default("draft"),
+  internalNotes: z.string().default(""),
 });
 
 const appSettingsSchema = z.object({

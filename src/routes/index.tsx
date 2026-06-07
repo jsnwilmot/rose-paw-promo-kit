@@ -50,6 +50,7 @@ function Dashboard() {
     };
   }, []);
 
+  const visibleKits = kits.filter((kit) => kit.status !== "archived");
   const completion = profile ? isProfileComplete(profile) : null;
   const completedCount = completion ? Object.values(completion).filter(Boolean).length : 0;
   const totalCount = completion ? Object.values(completion).length : 6;
@@ -59,7 +60,7 @@ function Dashboard() {
     ? { text: "Start by filling in your Business Profile.", to: "/profile", cta: "Set up profile" }
     : !profile?.logoDataUrl
       ? { text: "Add your logo so it appears on your kits.", to: "/profile", cta: "Upload logo" }
-      : kits.length === 0
+      : visibleKits.length === 0
         ? {
             text: "Create your first promo kit in under 2 minutes.",
             to: "/create",
@@ -178,7 +179,7 @@ function Dashboard() {
               <Link to="/kits">View all</Link>
             </Button>
           </div>
-          {kits.length === 0 ? (
+          {visibleKits.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border bg-muted/40 p-8 text-center">
               <ClipboardList className="mx-auto size-8 text-muted-foreground/60" />
               <p className="mt-2 text-sm text-muted-foreground">No promo kits saved yet.</p>
@@ -191,7 +192,7 @@ function Dashboard() {
             </div>
           ) : (
             <ul className="divide-y divide-border">
-              {kits.slice(0, 4).map((k) => (
+              {visibleKits.slice(0, 4).map((k) => (
                 <li key={k.id} className="py-3 flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <div className="font-medium truncate">{k.campaignName}</div>

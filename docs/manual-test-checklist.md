@@ -1,5 +1,21 @@
 # Manual Test Checklist
 
+## Saved kit management
+
+- Open Saved Kits with existing campaigns and confirm archived kits are hidden by default.
+- Search by campaign name, business name, business type, campaign goal, service area, and internal
+  notes.
+- Combine search with the business and campaign goal or type filters.
+- Test newest, oldest, business A-Z, and campaign A-Z sorting.
+- Duplicate a kit and confirm it has a new ID, current timestamps, and a name ending in `copy`.
+- Open the duplicate and confirm its generated content, form inputs, and logo snapshot still load.
+- Rename one kit and confirm other saved kits and generated content are unchanged.
+- Save internal notes, reload Saved Kits, and confirm the notes remain searchable.
+- Confirm archive asks for confirmation and hides the kit from the default view.
+- Show archived kits, restore one, and confirm it returns to the default view.
+- Export and import a backup containing duplicated, archived, and internally noted kits.
+- Open a saved kit and confirm Design Help Request still uses the active profile and selected kit.
+
 ## Business profile presets
 
 - Open Business Profile and confirm all seven presets show a business name, type, and description.

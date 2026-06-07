@@ -199,6 +199,9 @@ function KitPage() {
                 <SelectItem value="draft">Draft</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="archived" disabled>
+                  Archived
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>

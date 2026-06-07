@@ -2,6 +2,8 @@
 
 ## June 2026
 
+- Improved Saved Kits with combined search, business and campaign filters, sorting, duplication,
+  internal notes, and non-destructive archive and restore actions.
 - Added seven local business profile presets with a confirmation step that updates only the active
   profile and preserves existing saved kits.
 - Improved local promo kit copy with shorter social posts, direct Google Business Profile updates,
