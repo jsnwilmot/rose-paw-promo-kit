@@ -51,15 +51,26 @@ export function DesignHelpRequestDialog({
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [customNotes, setCustomNotes] = useState("");
   const [message, setMessage] = useState("");
+  const [requestCreatedAt, setRequestCreatedAt] = useState("");
   const [consent, setConsent] = useState(false);
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
 
-  function makeMessage(kit = selectedKit, services = selectedServices, notes = customNotes) {
+  function makeMessage({
+    kit = selectedKit,
+    services = selectedServices,
+    notes = customNotes,
+    requesterName = name,
+    requesterEmail = email,
+    createdAt = requestCreatedAt,
+  } = {}) {
     return buildDesignHelpMessage({
       kit,
       profile,
       selectedServices: services,
       customNotes: notes,
+      requesterName,
+      requesterEmail,
+      createdAt,
     });
   }
 
@@ -75,12 +86,17 @@ export function DesignHelpRequestDialog({
     setEmail("");
     setSelectedServices([]);
     setCustomNotes("");
+    const createdAt = new Date().toISOString();
+    setRequestCreatedAt(createdAt);
     setMessage(
       buildDesignHelpMessage({
         kit: currentKit,
         profile,
         selectedServices: [],
         customNotes: "",
+        requesterName: "",
+        requesterEmail: "",
+        createdAt,
       }),
     );
     setConsent(false);
@@ -91,7 +107,7 @@ export function DesignHelpRequestDialog({
     const nextKit = kits.find((kit) => kit.id === id);
     if (!nextKit) return;
     setSelectedKit(nextKit);
-    setMessage(makeMessage(nextKit));
+    setMessage(makeMessage({ kit: nextKit }));
     setSubmitState("idle");
   }
 
@@ -100,13 +116,13 @@ export function DesignHelpRequestDialog({
       ? [...selectedServices, service]
       : selectedServices.filter((candidate) => candidate !== service);
     setSelectedServices(nextServices);
-    setMessage(makeMessage(selectedKit, nextServices));
+    setMessage(makeMessage({ services: nextServices }));
     setSubmitState("idle");
   }
 
   function updateNotes(notes: string) {
     setCustomNotes(notes);
-    setMessage(makeMessage(selectedKit, selectedServices, notes));
+    setMessage(makeMessage({ notes }));
     setSubmitState("idle");
   }
 
@@ -129,6 +145,7 @@ export function DesignHelpRequestDialog({
       customNotes,
       requesterName: name,
       requesterEmail: email,
+      createdAt: requestCreatedAt,
     };
   }
 
@@ -203,7 +220,9 @@ export function DesignHelpRequestDialog({
                 required
                 value={name}
                 onChange={(event) => {
-                  setName(event.target.value);
+                  const requesterName = event.target.value;
+                  setName(requesterName);
+                  setMessage(makeMessage({ requesterName }));
                   setSubmitState("idle");
                 }}
               />
@@ -217,7 +236,9 @@ export function DesignHelpRequestDialog({
                 required
                 value={email}
                 onChange={(event) => {
-                  setEmail(event.target.value);
+                  const requesterEmail = event.target.value;
+                  setEmail(requesterEmail);
+                  setMessage(makeMessage({ requesterEmail }));
                   setSubmitState("idle");
                 }}
               />
@@ -271,6 +292,10 @@ export function DesignHelpRequestDialog({
           )}
 
           <Field label="Request message" htmlFor="design-request-message">
+            <p className="text-xs text-muted-foreground">
+              You can edit this before sending. The details below will be emailed to Rose &amp; Paw
+              Digital Designs.
+            </p>
             <Textarea
               id="design-request-message"
               name="message"

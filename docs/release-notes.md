@@ -2,8 +2,10 @@
 
 ## June 2026
 
+- Design help request emails are now formatted as readable plain-text briefs instead of raw JSON
+  data dumps.
 - Added a complete Web3Forms design help request flow with editable messages, requested-service
-  selection, consent, clean hidden kit context, and copy/JSON fallbacks.
+  selection, consent, readable kit context, and copy/JSON fallbacks.
 - Generated kits now preserve the logo used at creation time.
 - Friendly tone has dedicated local-business wording, and extra notes influence relevant content.
 - Added email newsletter copy, separate hashtag suggestions, and draft/active/completed statuses.

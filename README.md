@@ -19,9 +19,9 @@ Settings includes a versioned JSON export and import workflow. Imports are valid
 
 The generated-kit page can build and submit a design help request to Rose & Paw Digital Designs
 through Web3Forms. Nothing is sent until the user completes the consent checkbox and submits the
-form. The request includes the editable message plus clean business profile, brand, and selected-kit
-context. Raw base64 logo data is excluded. Users can also copy the message or download the clean
-request package as JSON.
+form. Web3Forms receives one readable plain-text request summary plus a compact set of searchable
+fields. Raw JSON and base64 logo data are excluded. Users can copy the same readable message or
+manually download the full structured request package as a JSON fallback.
 
 ## Development
 

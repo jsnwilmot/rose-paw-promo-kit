@@ -1,4 +1,4 @@
-import { APP_DOMAIN, APP_VERSION, WEB3FORMS_ACCESS_KEY } from "./app-config";
+import { APP_DOMAIN, WEB3FORMS_ACCESS_KEY } from "./app-config";
 import type { AppSettings, BusinessProfile, PromoKit } from "./storage";
 
 export const DESIGN_SERVICE_OPTIONS = [
@@ -23,50 +23,129 @@ type BuildRequestPackageArgs = {
   createdAt?: string;
 };
 
+export function formatValue(value: unknown): string {
+  if (Array.isArray(value)) {
+    const items = value.map(formatValue).filter((item) => item !== "Not provided");
+    return items.length ? items.join(", ") : "Not provided";
+  }
+  if (typeof value === "string") return value.trim() || "Not provided";
+  if (value === null || value === undefined) return "Not provided";
+  return String(value);
+}
+
+export function formatBulletList(items: unknown): string {
+  const values = Array.isArray(items)
+    ? items
+    : typeof items === "string"
+      ? items.split(/\r?\n|,/)
+      : [];
+  const cleaned = values.map((item) => formatValue(item)).filter((item) => item !== "Not provided");
+  return cleaned.length ? cleaned.map((item) => `- ${item}`).join("\n") : "- Not provided";
+}
+
+export function formatYesNo(value: unknown): string {
+  return value ? "Yes" : "No";
+}
+
 export function buildDesignHelpMessage({
   kit,
   profile,
   selectedServices,
   customNotes,
-}: Pick<BuildRequestPackageArgs, "kit" | "profile" | "selectedServices" | "customNotes">) {
-  const services = selectedServices.length
-    ? selectedServices.map((service) => `- ${service}`).join("\n")
-    : "- Not selected yet";
+  requesterName,
+  requesterEmail,
+  createdAt = new Date().toISOString(),
+}: Omit<BuildRequestPackageArgs, "settings">) {
+  const generated = kit.generatedSections;
+  const flyerCopy = [
+    generated.flyer.headline,
+    generated.flyer.subheadline,
+    formatBulletList(generated.flyer.bullets),
+    `Call to action: ${formatValue(generated.flyer.cta)}`,
+    `Contact: ${formatValue(generated.flyer.contact)}`,
+  ].join("\n");
+  const calendar = generated.postingPlan.length
+    ? generated.postingPlan
+        .map(
+          (item) =>
+            `${formatValue(item.day)}: ${formatValue(item.platform)} - ${formatValue(item.topic)}`,
+        )
+        .join("\n")
+    : "Not provided";
 
-  return `Hi Rose & Paw Digital Designs,
+  return `Rose & Paw Design Help Request
 
-I'd like help turning this promo kit into finished design materials.
+REQUESTER
+Name: ${formatValue(requesterName)}
+Email: ${formatValue(requesterEmail)}
+Submitted: ${new Date(createdAt).toLocaleString()}
+Source app: ${APP_DOMAIN}
 
-Business:
-${profile.businessName || kit.businessName || "Not provided"}
-${profile.businessType || kit.businessType || "Not provided"}
-${profile.serviceArea || kit.formInputs.location || "Not provided"}
+BUSINESS
+Business name: ${formatValue(profile.businessName || kit.businessName)}
+Business type: ${formatValue(profile.businessType || kit.businessType)}
+Service area: ${formatValue(profile.serviceArea || kit.formInputs.location)}
+Description: ${formatValue(profile.businessDescription)}
 
-Campaign:
-${kit.campaignName}
-Goal: ${kit.campaignGoal}
-Audience: ${kit.formInputs.targetCustomer || kit.generatedSections.summary.audience || "Not provided"}
-Offer: ${kit.formInputs.offer || "Not provided"}
-Call to action: ${kit.formInputs.callToAction || kit.generatedSections.summary.recommendedCta || "Not provided"}
+Main services:
+${formatBulletList(profile.mainServices)}
 
-Requested help:
-${services}
+Target customer: ${formatValue(profile.targetCustomer || kit.formInputs.targetCustomer)}
+Brand tone: ${formatValue(profile.brandTone || kit.formInputs.tone)}
+Contact method: ${formatValue(profile.contactMethod)}
 
-Branding:
-Main colour: ${profile.mainBrandColour}
-Secondary colour: ${profile.secondaryBrandColour}
-Logo included: ${profile.logoDataUrl || kit.logoSnapshotDataUrl ? "Yes" : "No"}
+BRANDING
+Primary colour: ${formatValue(profile.mainBrandColour)}
+Secondary colour: ${formatValue(profile.secondaryBrandColour)}
+Logo included in app: ${formatYesNo(profile.logoDataUrl || kit.logoSnapshotDataUrl)}
+Logo file name: ${formatValue(profile.logoFileName || kit.logoSnapshotFileName)}
 
-Links:
-Website: ${profile.websiteLink || "Not provided"}
-Facebook: ${profile.facebookLink || "Not provided"}
-Instagram: ${profile.instagramLink || "Not provided"}
-Google Business Profile: ${profile.googleBusinessProfileLink || "Not provided"}
+LINKS
+Website: ${formatValue(profile.websiteLink)}
+Facebook: ${formatValue(profile.facebookLink)}
+Instagram: ${formatValue(profile.instagramLink)}
+Google Business Profile: ${formatValue(profile.googleBusinessProfileLink)}
 
-Notes:
-${customNotes}
+PROMO KIT
+Kit name: ${formatValue(kit.campaignName)}
+Kit ID: ${formatValue(kit.id)}
+Created: ${new Date(kit.createdAt).toLocaleString()}
+Campaign goal: ${formatValue(kit.campaignGoal)}
+Audience: ${formatValue(kit.formInputs.targetCustomer || generated.summary.audience)}
+Offer: ${formatValue(kit.formInputs.offer)}
+Call to action: ${formatValue(kit.formInputs.callToAction || generated.summary.recommendedCta)}
 
-Please review the kit details and let me know what you recommend.`;
+REQUESTED DESIGN HELP
+${formatBulletList(selectedServices)}
+
+CLIENT NOTES
+${formatValue(customNotes)}
+
+GENERATED KIT SUMMARY
+
+Headline:
+${formatValue(generated.flyer.headline)}
+
+Primary post copy:
+${formatValue(generated.facebookPosts[0]?.text)}
+
+Google Business Profile post:
+${formatValue(generated.googlePosts[0]?.text)}
+
+Flyer copy:
+${flyerCopy}
+
+Review request:
+${formatValue(generated.reviewRequests[0]?.text)}
+
+Image prompt:
+${formatValue(generated.imagePrompts[0])}
+
+Campaign calendar:
+${calendar}
+
+NEXT STEP
+Please review this request and follow up with the requester by email.`;
 }
 
 export function buildDesignHelpRequestPackage({
@@ -132,17 +211,6 @@ export function buildDesignHelpFormData(
 ): FormData {
   const requestPackage = buildDesignHelpRequestPackage(args);
   const { businessProfile, promoKit } = requestPackage;
-  const brandSettings = {
-    agencyName: args.settings.agencyName,
-    defaultBrandTone: args.settings.defaultBrandTone,
-    defaultServiceArea: args.settings.defaultServiceArea,
-    mainBrandColour: businessProfile.mainBrandColour,
-    secondaryBrandColour: businessProfile.secondaryBrandColour,
-    logoIncluded: businessProfile.logoIncluded,
-    logoFileName: businessProfile.logoFileName,
-    logoSnapshotIncluded: promoKit.logoSnapshotIncluded,
-    logoSnapshotFileName: promoKit.logoSnapshotFileName,
-  };
   const formData = new FormData();
   const businessName = businessProfile.businessName || promoKit.businessName || "Unnamed business";
 
@@ -158,27 +226,8 @@ export function buildDesignHelpFormData(
     business_name: businessName,
     business_type: businessProfile.businessType || promoKit.businessType,
     service_area: businessProfile.serviceArea,
-    contact_method: businessProfile.contactMethod,
-    website_url: businessProfile.websiteLink,
-    facebook_url: businessProfile.facebookLink,
-    instagram_url: businessProfile.instagramLink,
-    google_business_profile_url: businessProfile.googleBusinessProfileLink,
-    brand_primary_colour: businessProfile.mainBrandColour,
-    brand_secondary_colour: businessProfile.secondaryBrandColour,
-    logo_included: businessProfile.logoIncluded || promoKit.logoSnapshotIncluded ? "Yes" : "No",
-    logo_file_name: businessProfile.logoFileName || promoKit.logoSnapshotFileName,
     selected_kit_id: promoKit.id,
-    selected_kit_goal: promoKit.campaignGoal,
-    selected_kit_offer: promoKit.formInputs.offer,
-    selected_kit_audience: promoKit.formInputs.targetCustomer,
-    selected_kit_cta:
-      promoKit.formInputs.callToAction || promoKit.generatedSections.summary.recommendedCta,
-    selected_kit_created_at: promoKit.createdAt,
-    business_profile_json: JSON.stringify(businessProfile),
-    brand_settings_json: JSON.stringify(brandSettings),
-    selected_kit_json: JSON.stringify(promoKit),
-    generated_content_json: JSON.stringify(promoKit.generatedSections),
-    app_version: APP_VERSION,
+    campaign_goal: promoKit.campaignGoal,
     request_created_at: requestPackage.createdAt,
   };
 
