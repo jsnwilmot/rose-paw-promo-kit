@@ -88,6 +88,7 @@ export type GeneratedSections = {
 };
 
 export type KitStatus = "draft" | "active" | "completed" | "archived";
+export type RestorableKitStatus = Exclude<KitStatus, "archived">;
 
 export type PromoKit = {
   id: string;
@@ -103,6 +104,7 @@ export type PromoKit = {
   logoSnapshotDataUrl: string;
   logoSnapshotFileName: string;
   status: KitStatus;
+  archivedFromStatus?: RestorableKitStatus;
   internalNotes: string;
   source?: "design-request-import";
   sourcePackageVersion?: number;
@@ -323,6 +325,7 @@ const promoKitSchema = z.object({
   logoSnapshotDataUrl: logoDataUrl.default(""),
   logoSnapshotFileName: z.string().default(""),
   status: z.enum(["draft", "active", "completed", "archived"]).default("draft"),
+  archivedFromStatus: z.enum(["draft", "active", "completed"]).optional(),
   internalNotes: z.string().default(""),
   source: z.literal("design-request-import").optional(),
   sourcePackageVersion: z.number().int().optional(),

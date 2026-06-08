@@ -21,6 +21,7 @@ export function duplicateKitById(id: string): PromoKit | null {
     createdAt: now,
     updatedAt: now,
     status: "draft" as const,
+    archivedFromStatus: undefined,
   };
   return upsertKit(duplicate).ok ? duplicate : null;
 }
@@ -29,9 +30,16 @@ export function setKitArchivedById(id: string, archived: boolean): PromoKit | nu
   const kit = getKit(id);
   if (!kit) return null;
 
+  if (!archived && kit.status !== "archived") return kit;
+
+  const restoredStatus = kit.archivedFromStatus || "draft";
+  const archivedFromStatus =
+    kit.status === "archived" ? kit.archivedFromStatus || "draft" : kit.status;
+
   const updated = {
     ...kit,
-    status: archived ? ("archived" as const) : ("active" as const),
+    status: archived ? ("archived" as const) : restoredStatus,
+    archivedFromStatus: archived ? archivedFromStatus : undefined,
     updatedAt: new Date().toISOString(),
   };
   return upsertKit(updated).ok ? updated : null;

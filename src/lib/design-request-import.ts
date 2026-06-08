@@ -191,11 +191,11 @@ export function mapRequestPackageToSavedKit(
     campaignGoal: storedText(importedKit.campaignGoal) || formInputs.campaignGoal,
     businessName: storedText(importedKit.businessName) || importedProfile.businessName,
     businessType: storedText(importedKit.businessType) || importedProfile.businessType,
-    formInputs,
+    formInputs: { ...formInputs, useLogo: false },
     generatedSections,
     useLogo: false,
     logoSnapshotDataUrl: "",
-    logoSnapshotFileName: storedText(importedKit.logoSnapshotFileName),
+    logoSnapshotFileName: "",
     status: "active",
     internalNotes: options.addRequestDetailsAsInternalNotes
       ? buildRequestInternalNote(packageData)
