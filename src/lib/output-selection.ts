@@ -63,3 +63,7 @@ export function normalizeSelectedOutputs(
     ]),
   ) as SelectedOutputs;
 }
+
+export function resolveSelectedOutputs(value: unknown): SelectedOutputs {
+  return normalizeSelectedOutputs(value, legacyOutputs);
+}

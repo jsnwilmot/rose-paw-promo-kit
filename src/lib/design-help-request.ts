@@ -1,6 +1,6 @@
 import { APP_DOMAIN, WEB3FORMS_ACCESS_KEY } from "./app-config";
 import type { AppSettings, BusinessProfile, PromoKit } from "./storage";
-import { legacyOutputs, selectedOutputLabels } from "./output-selection";
+import { resolveSelectedOutputs, selectedOutputLabels } from "./output-selection";
 
 export const DESIGN_SERVICE_OPTIONS = [
   "Branded social media graphics",
@@ -58,7 +58,7 @@ export function buildDesignHelpMessage({
   createdAt = new Date().toISOString(),
 }: Omit<BuildRequestPackageArgs, "settings">) {
   const generated = kit.generatedSections;
-  const outputs = kit.formInputs.selectedOutputs || legacyOutputs;
+  const outputs = resolveSelectedOutputs(kit.formInputs.selectedOutputs);
   const flyerCopy = generated.flyer
     ? [
         generated.flyer.headline,
@@ -216,7 +216,7 @@ export function buildDesignHelpRequestPackage({
       updatedAt: kit.updatedAt,
       status: kit.status,
       formInputs: kit.formInputs,
-      selectedOutputs: kit.formInputs.selectedOutputs || legacyOutputs,
+      selectedOutputs: resolveSelectedOutputs(kit.formInputs.selectedOutputs),
       generatedSections: kit.generatedSections,
       useLogo: kit.useLogo,
       logoSnapshotIncluded: !!kit.logoSnapshotDataUrl,
@@ -250,7 +250,7 @@ export function buildDesignHelpFormData(
     selected_kit_id: promoKit.id,
     campaign_goal: promoKit.campaignGoal,
     selected_kit_outputs: selectedOutputLabels(
-      promoKit.formInputs.selectedOutputs || legacyOutputs,
+      resolveSelectedOutputs(promoKit.formInputs.selectedOutputs),
     ).join(", "),
     campaign_calendar: "Included",
     request_created_at: requestPackage.createdAt,

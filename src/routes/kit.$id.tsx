@@ -29,7 +29,7 @@ import {
 } from "@/lib/storage";
 import { ArrowLeft, Printer, Trash2, Pencil, Files } from "lucide-react";
 import { toast } from "sonner";
-import { legacyOutputs } from "@/lib/output-selection";
+import { resolveSelectedOutputs } from "@/lib/output-selection";
 
 export const Route = createFileRoute("/kit/$id")({
   head: () => ({ meta: [{ title: "Promo Kit — Rose & Paw" }] }),
@@ -96,7 +96,7 @@ function KitPage() {
   };
   const logoUrl = kit.useLogo ? kit.logoSnapshotDataUrl || profile.logoDataUrl : "";
   const g = kit.generatedSections;
-  const selectedOutputs = kit.formInputs.selectedOutputs || legacyOutputs;
+  const selectedOutputs = resolveSelectedOutputs(kit.formInputs.selectedOutputs);
   const showPrintableSummary = selectedOutputs.printableSummary;
 
   function rename(title: string) {
@@ -561,7 +561,7 @@ function emailText(k: PromoKit) {
 }
 function buildFullText(k: PromoKit) {
   const g = k.generatedSections;
-  const outputs = k.formInputs.selectedOutputs || legacyOutputs;
+  const outputs = resolveSelectedOutputs(k.formInputs.selectedOutputs);
   const sec = (title: string, body: string) => `=== ${title} ===\n${body}\n`;
   return [
     sec("CAMPAIGN SUMMARY", summaryText(k)),

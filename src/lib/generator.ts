@@ -1,5 +1,5 @@
 import type { AppSettings, BusinessProfile, GeneratedSections, PromoFormInputs } from "./storage";
-import { legacyOutputs } from "./output-selection";
+import { resolveSelectedOutputs } from "./output-selection";
 
 function pick<T>(items: T[], seed: string): T {
   const total = [...seed].reduce((sum, char) => sum + char.charCodeAt(0), 0);
@@ -278,7 +278,7 @@ function buildCampaignCalendar(
   offer: string,
   cta: string,
 ): GeneratedSections["postingPlan"] {
-  const outputs = inputs.selectedOutputs || legacyOutputs;
+  const outputs = resolveSelectedOutputs(inputs.selectedOutputs);
   const day = (index: number, platform: string, type: string, topic: string, note: string) => ({
     day: `Day ${index}`,
     platform,
@@ -739,7 +739,7 @@ export function generateKit(
     postingPlan: buildCampaignCalendar(inputs, service, offer, cta),
   };
 
-  const outputs = inputs.selectedOutputs || legacyOutputs;
+  const outputs = resolveSelectedOutputs(inputs.selectedOutputs);
   if (!outputs.facebookPosts) delete generated.facebookPosts;
   if (!outputs.instagramCaptions) {
     delete generated.instagramCaptions;
