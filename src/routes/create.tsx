@@ -100,11 +100,22 @@ function CreatePage() {
   }>({});
 
   useEffect(() => {
-    const p = loadProfile();
-    const appSettings = loadSettings();
-    setProfile(p);
-    setSettings(appSettings);
-    setForm(emptyForm(p, appSettings));
+    const rehydrate = () => {
+      const p = loadProfile();
+      const appSettings = loadSettings();
+      setProfile(p);
+      setSettings(appSettings);
+      setForm((previous) => previous ?? emptyForm(p, appSettings));
+    };
+
+    rehydrate();
+    window.addEventListener("rp:profile-changed", rehydrate);
+    window.addEventListener("rp:settings-changed", rehydrate);
+
+    return () => {
+      window.removeEventListener("rp:profile-changed", rehydrate);
+      window.removeEventListener("rp:settings-changed", rehydrate);
+    };
   }, []);
 
   if (!profile || !settings || !form)

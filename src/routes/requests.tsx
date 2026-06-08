@@ -22,7 +22,7 @@ import {
   type DesignRequestImportPreview,
   type DesignRequestPackage,
 } from "@/lib/design-request-import";
-import { loadProfile, loadSettings, saveProfile, upsertKit } from "@/lib/storage";
+import { deleteKit, loadProfile, loadSettings, saveProfile, upsertKit } from "@/lib/storage";
 import { AlertCircle, CheckCircle2, FileJson, Inbox, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -103,28 +103,46 @@ function RequestsPage() {
     if (!requestPackage) return;
     setImporting(true);
     const settings = loadSettings();
+    const stagedKit = createSavedKit
+      ? mapRequestPackageToSavedKit(requestPackage, {
+          addRequestDetailsAsInternalNotes: addInternalNotes,
+          settings,
+        })
+      : null;
+    const stagedProfile = replaceProfile
+      ? mapRequestBusinessProfileToProfile(requestPackage, loadProfile())
+      : null;
+
     let kitId: string | undefined;
     let profileUpdated = false;
 
-    if (createSavedKit) {
-      const kit = mapRequestPackageToSavedKit(requestPackage, {
-        addRequestDetailsAsInternalNotes: addInternalNotes,
-        settings,
-      });
-      const result = upsertKit(kit);
+    if (stagedKit) {
+      const result = upsertKit(stagedKit);
       if (!result.ok) {
         setImporting(false);
         setConfirmProfileReplace(false);
         toast.error(result.error);
         return;
       }
-      kitId = kit.id;
+      kitId = stagedKit.id;
     }
 
-    if (replaceProfile) {
-      const profile = mapRequestBusinessProfileToProfile(requestPackage, loadProfile());
-      const result = saveProfile(profile);
+    if (stagedProfile) {
+      const result = saveProfile(stagedProfile);
       if (!result.ok) {
+        if (kitId) {
+          const rollback = deleteKit(kitId);
+          setImporting(false);
+          setConfirmProfileReplace(false);
+          if (!rollback.ok) {
+            toast.error(
+              `Import failed and rollback could not be completed: ${rollback.error} Original error: ${result.error}`,
+            );
+            return;
+          }
+          toast.error(`Import failed and the created kit was rolled back: ${result.error}`);
+          return;
+        }
         setImporting(false);
         setConfirmProfileReplace(false);
         toast.error(result.error);

@@ -27,10 +27,12 @@ import {
 } from "@/lib/kit-actions";
 import {
   deleteKit,
+  loadSettings,
   emptyProfile,
   loadKits,
   loadProfile,
   upsertKit,
+  type AppSettings,
   type BusinessProfile,
   type PromoKit,
 } from "@/lib/storage";
@@ -70,6 +72,7 @@ function KitsPage() {
   const [sort, setSort] = useState<SortOption>("newest");
   const [showArchived, setShowArchived] = useState(false);
   const [profile, setProfile] = useState<BusinessProfile>(emptyProfile);
+  const [settings, setSettings] = useState<AppSettings>(() => loadSettings());
   const [renameTarget, setRenameTarget] = useState<PromoKit | null>(null);
   const [notesTarget, setNotesTarget] = useState<PromoKit | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<PromoKit | null>(null);
@@ -77,10 +80,22 @@ function KitsPage() {
 
   useEffect(() => {
     const refresh = () => setKits(loadKits());
-    setProfile(loadProfile());
+    const rehydrateProfile = () => setProfile(loadProfile());
+    const rehydrateSettings = () => setSettings(loadSettings());
+
+    rehydrateProfile();
+    rehydrateSettings();
     refresh();
+
     window.addEventListener("rp:kits-changed", refresh);
-    return () => window.removeEventListener("rp:kits-changed", refresh);
+    window.addEventListener("rp:profile-changed", rehydrateProfile);
+    window.addEventListener("rp:settings-changed", rehydrateSettings);
+
+    return () => {
+      window.removeEventListener("rp:kits-changed", refresh);
+      window.removeEventListener("rp:profile-changed", rehydrateProfile);
+      window.removeEventListener("rp:settings-changed", rehydrateSettings);
+    };
   }, []);
 
   const businessNames = uniqueSorted(kits.map((kit) => kit.businessName).filter(Boolean));
@@ -272,7 +287,7 @@ function KitsPage() {
         )}
 
         {kits.length === 0 ? (
-          <EmptyKits />
+          <EmptyKits agencyName={settings.agencyName} />
         ) : visibleKits.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center">
             <Search className="mx-auto size-9 text-muted-foreground/50" />
@@ -440,13 +455,13 @@ function FilterField({ label, children }: { label: string; children: React.React
   );
 }
 
-function EmptyKits() {
+function EmptyKits({ agencyName }: { agencyName: string }) {
   return (
     <div className="rounded-2xl border border-dashed border-border bg-card p-12 text-center">
       <FolderHeart className="mx-auto size-10 text-muted-foreground/50" />
       <h2 className="mt-3 font-display text-xl">No kits yet</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Create your first promo kit in a couple of minutes.
+        Create your first promo kit in a couple of minutes with {agencyName}.
       </p>
       <Button asChild className="mt-4 gap-2">
         <Link to="/create">
