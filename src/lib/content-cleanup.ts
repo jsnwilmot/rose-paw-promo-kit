@@ -40,6 +40,18 @@ function removeEmptyBullets(value: string) {
     .join("\n");
 }
 
+const leakedLabelPattern =
+  /\b(Hook|Local detail|Local\/business detail|Service or offer|CTA|Angle|Caption line|Shot idea|Supporting line|Offer|Proof|Benefit|Question|Answer)\s*:\s*/gi;
+
+function stripLeakedTemplateLabels(value: string) {
+  return value
+    .split("\n")
+    .map((line) => line.replace(leakedLabelPattern, ""))
+    .join("\n")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 function reduceRepeatedCtaLines(value: string, cta: string) {
   if (!cta) return value;
   const normalizedCta = cta
@@ -74,7 +86,13 @@ function reduceBusinessNameRepetition(value: string, businessName: string) {
   });
 }
 
-export function cleanupGeneratedText(value: string, businessName: string, cta: string) {
+export function cleanupGeneratedText(
+  value: string,
+  businessName: string,
+  cta: string,
+  options: { stripTemplateLabels?: boolean } = {},
+) {
+  const { stripTemplateLabels = true } = options;
   let next = value || "";
   next = dedupeBlankLines(next);
   next = removeEmptyBullets(next);
@@ -84,6 +102,7 @@ export function cleanupGeneratedText(value: string, businessName: string, cta: s
     .join("\n");
   next = reduceRepeatedCtaLines(next, cta);
   next = reduceBusinessNameRepetition(next, businessName);
+  if (stripTemplateLabels) next = stripLeakedTemplateLabels(next);
   for (const [pattern, replacement] of bannedPhraseReplacements) {
     next = next.replace(pattern, replacement);
   }
@@ -99,15 +118,21 @@ export function cleanupGeneratedSections(
   businessName: string,
   cta: string,
 ): GeneratedSections {
-  const walk = (value: unknown): unknown => {
-    if (typeof value === "string") return cleanupGeneratedText(value, businessName, cta);
-    if (Array.isArray(value)) return value.map((item) => walk(item));
+  const walk = (value: unknown, path: string[] = []): unknown => {
+    if (typeof value === "string") {
+      const isCalendarPlanningNote =
+        path.length >= 3 && path[path.length - 1] === "note" && path.includes("postingPlan");
+      return cleanupGeneratedText(value, businessName, cta, {
+        stripTemplateLabels: !isCalendarPlanningNote,
+      });
+    }
+    if (Array.isArray(value)) return value.map((item, index) => walk(item, [...path, `${index}`]));
     if (value && typeof value === "object") {
       return Object.fromEntries(
-        Object.entries(value).map(([key, nestedValue]) => [key, walk(nestedValue)]),
+        Object.entries(value).map(([key, nestedValue]) => [key, walk(nestedValue, [...path, key])]),
       );
     }
     return value;
   };
-  return walk(sections) as GeneratedSections;
+  return walk(sections, []) as GeneratedSections;
 }

@@ -24,6 +24,13 @@ function words(value: string, max = 90) {
     .replace(/[,:;.!?]+$/, "")}...`;
 }
 
+function composeBlock(parts: Array<string | undefined>) {
+  return parts
+    .map((part) => clean(part))
+    .filter(Boolean)
+    .join("\n\n");
+}
+
 function localPhrase(serviceArea: string) {
   return serviceArea ? `in ${serviceArea}` : "for local customers";
 }
@@ -384,13 +391,24 @@ export function generateKit(
   const brief = buildCampaignBrief(inputs, profile, settings);
   const service = brief.featuredServices[0] || "service";
   const serviceLine = `${service} ${localPhrase(brief.serviceArea)}`.trim();
-  const offerLine = brief.mainOffer ? `Offer: ${brief.mainOffer}` : `Service focus: ${service}`;
+  const offerLine = brief.mainOffer || `Focused on ${service}`;
   const locationLine = brief.serviceArea
     ? `${brief.businessName} serving ${brief.serviceArea}`
     : `${brief.businessName} serving local customers`;
   const proof = brief.proofPoints[0] || "Serving local customers with practical, friendly service";
   const secondProof = brief.proofPoints[1] || "Clear next steps before booking";
   const cta = brief.callToAction;
+  const isContractor = /(contract|repair|renov|handyman|home service|maintenance)/i.test(
+    brief.businessType,
+  );
+  const primaryHook = isContractor
+    ? "Need help with repairs or small upgrades around your home?"
+    : brief.mainOffer
+      ? `${brief.mainOffer} ${localPhrase(brief.serviceArea)}`
+      : `Need ${service} ${localPhrase(brief.serviceArea)}?`;
+  const serviceDetail = isContractor
+    ? `${brief.businessName} helps homeowners${brief.serviceArea ? ` in ${brief.serviceArea}` : ""} with repairs, maintenance, upgrades, and clear communication.`
+    : `${brief.businessName} helps ${brief.targetCustomer}${brief.serviceArea ? ` in ${brief.serviceArea}` : ""} with ${service}.`;
 
   const generated: GeneratedSections = {
     summary: {
@@ -405,39 +423,25 @@ export function generateKit(
     facebookPosts: [
       {
         label: "Campaign launch",
-        text: words(
-          line([
-            `Hook: ${brief.campaignTheme}`,
-            `Local detail: ${locationLine}`,
-            `Service or offer: ${offerLine}`,
-            `CTA: ${cta}`,
-          ]),
-          90,
-        ),
+        text: composeBlock([primaryHook, serviceDetail, offerLine, cta]),
       },
       {
         label: "Service detail",
-        text: words(
-          line([
-            `Hook: ${service} for ${brief.targetCustomer}`,
-            `Local detail: ${brief.localDetails[0]}`,
-            `Service or offer: ${proof}`,
-            `CTA: ${cta}`,
-          ]),
-          90,
-        ),
+        text: composeBlock([
+          `${service} for ${brief.targetCustomer}.`,
+          brief.localDetails[0] || locationLine,
+          proof,
+          cta,
+        ]),
       },
       {
         label: "Weekly reminder",
-        text: words(
-          line([
-            `Hook: Reminder for this week's campaign`,
-            `Local detail: ${brief.localDetails[1] || locationLine}`,
-            `Service or offer: ${brief.mainOffer || serviceLine}`,
-            `CTA: ${cta}`,
-          ]),
-          90,
-        ),
+        text: composeBlock([
+          "A quick local reminder for this week.",
+          brief.localDetails[1] || locationLine,
+          brief.mainOffer || serviceLine,
+          cta,
+        ]),
       },
     ],
     instagramCaptions: [
@@ -470,27 +474,21 @@ export function generateKit(
     googlePosts: [
       {
         label: "Primary local post",
-        text: words(
-          line([
-            `${brief.businessName} ${localPhrase(brief.serviceArea)}`,
-            `Service keywords: ${brief.featuredServices.slice(0, 3).join(", ") || service}`,
-            `${brief.mainOffer || `Reason to book: ${proof}`}`,
-            `${cta}`,
-          ]),
-          80,
-        ),
+        text: composeBlock([
+          `${brief.businessName} ${localPhrase(brief.serviceArea)}`,
+          `${brief.featuredServices.slice(0, 3).join(", ") || service}`,
+          brief.mainOffer || proof,
+          cta,
+        ]),
       },
       {
         label: "Booking reminder",
-        text: words(
-          line([
-            `${brief.businessName} ${localPhrase(brief.serviceArea)}`,
-            `Service keywords: ${service}`,
-            `${brief.mainOffer || secondProof}`,
-            `${cta}`,
-          ]),
-          80,
-        ),
+        text: composeBlock([
+          `${brief.businessName} ${localPhrase(brief.serviceArea)}`,
+          service,
+          brief.mainOffer || secondProof,
+          cta,
+        ]),
       },
     ],
     flyer: {
@@ -588,20 +586,20 @@ export function generateKit(
     videoScripts: [
       {
         label: "Quick service intro",
-        text: line([
-          `Hook: ${brief.campaignTheme}`,
-          `Shot idea: film one practical moment of ${service} ${localPhrase(brief.serviceArea)}`,
-          `Caption: ${offerLine}`,
-          `CTA: ${cta}`,
+        text: composeBlock([
+          `${brief.campaignTheme}`,
+          `Film one practical moment of ${service} ${localPhrase(brief.serviceArea)}.`,
+          `${offerLine}.`,
+          cta,
         ]),
       },
       {
         label: "FAQ short",
-        text: line([
-          `Hook: quick answer for local customers`,
-          `Shot idea: answer one question about ${service}`,
-          `Caption: ${proof}`,
-          `CTA: ${cta}`,
+        text: composeBlock([
+          "Quick answer for local customers.",
+          `Answer one practical question about ${service}.`,
+          proof,
+          cta,
         ]),
       },
     ],
