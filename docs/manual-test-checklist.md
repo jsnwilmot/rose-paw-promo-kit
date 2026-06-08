@@ -1,5 +1,26 @@
 # Manual Test Checklist
 
+## Heritage and Heart UI refresh
+
+- Confirm the app shell uses the Rose & Paw logo from source assets and heritage palette tokens.
+- Confirm dashboard shows app brand block, quick stats, getting-started checklist, and recent kits.
+- Confirm dashboard recent kits is capped at 4 while Saved Kits shows all non-archived kits.
+- Confirm dashboard shows recent design requests or a helpful empty state when none exist.
+- Confirm campaign builder sections read: The Foundation, Who are we reaching?, Delivery Channels,
+  Campaign Snapshot, and Ready to generate.
+- Confirm Saved Kits status filters support All, Draft, Active, and Archived.
+- Confirm kit preview shows app branding separately while client logo appears only when enabled.
+- Confirm Design Help Request dialog includes Rose & Paw app branding.
+
+## Storage and logo handling
+
+- Save more than four kits and confirm additional kits continue saving unless quota is genuinely near
+  full.
+- Confirm legacy kits with `logoSnapshotDataUrl` still render logos correctly.
+- Upload an oversized logo and confirm it is resized to fit 900px max dimension with clear notice.
+- Confirm large logo upload shows storage guidance and still allows saving.
+- Confirm Settings shows storage usage and can clear archived kits with confirmation.
+
 ## Marketing kit output selection
 
 - Open Create Promo Kit and confirm recommended outputs are selected by default.
@@ -96,6 +117,8 @@
 - Build with `VITE_WEB3FORMS_ACCESS_KEY` set and confirm Design Help Request can send normally.
 - Build without `VITE_WEB3FORMS_ACCESS_KEY` and confirm sending is disabled while copy/download
   fallback actions still work.
+- Set `VITE_WEB3FORMS_ACCESS_KEY=replace_with_your_web3forms_key` and confirm it still shows as
+  missing-key warning (placeholder should not count as configured).
 - Open dev tools, set the hidden `botcheck` field to a value, submit, and confirm request sending
   is blocked with a generic failure message.
 - Submit one valid request, then submit again within 60 seconds and confirm cooldown blocking.

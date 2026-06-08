@@ -11,6 +11,10 @@ export type BusinessProfile = {
   mainServices: string;
   targetCustomer: string;
   brandTone: string;
+  localSeoKeywords: string;
+  gbpAttributes: string;
+  trustPoints: string;
+  reviewResponseTone: string;
   websiteLink: string;
   facebookLink: string;
   instagramLink: string;
@@ -156,6 +160,10 @@ export const emptyProfile: BusinessProfile = {
   mainServices: "",
   targetCustomer: "",
   brandTone: "",
+  localSeoKeywords: "",
+  gbpAttributes: "",
+  trustPoints: "",
+  reviewResponseTone: "",
   websiteLink: "",
   facebookLink: "",
   instagramLink: "",
@@ -211,6 +219,10 @@ const businessProfileSchema = z.object({
   mainServices: z.string(),
   targetCustomer: z.string(),
   brandTone: z.string(),
+  localSeoKeywords: z.string(),
+  gbpAttributes: z.string(),
+  trustPoints: z.string(),
+  reviewResponseTone: z.string(),
   websiteLink: z.string(),
   facebookLink: z.string(),
   instagramLink: z.string(),
@@ -366,7 +378,14 @@ export type StorageAudit = {
   nearQuota: boolean;
 };
 
-const STORAGE_WARNING_BYTES = 4 * 1024 * 1024;
+export type BrowserStorageEstimate = {
+  usageBytes: number;
+  quotaBytes: number;
+  usagePercent: number;
+  hasEstimate: boolean;
+};
+
+const STORAGE_WARNING_BYTES = 4_750_000;
 
 const logoBlobStoreSchema = z.record(
   z.object({
@@ -660,6 +679,37 @@ export function getStorageAudit(): StorageAudit {
   };
 }
 
+export async function getBrowserStorageEstimate(): Promise<BrowserStorageEstimate> {
+  if (!isBrowser() || !navigator.storage?.estimate) {
+    return {
+      usageBytes: 0,
+      quotaBytes: 0,
+      usagePercent: 0,
+      hasEstimate: false,
+    };
+  }
+
+  try {
+    const estimate = await navigator.storage.estimate();
+    const usageBytes = Number(estimate.usage || 0);
+    const quotaBytes = Number(estimate.quota || 0);
+    const usagePercent = quotaBytes > 0 ? Math.round((usageBytes / quotaBytes) * 100) : 0;
+    return {
+      usageBytes,
+      quotaBytes,
+      usagePercent,
+      hasEstimate: quotaBytes > 0,
+    };
+  } catch {
+    return {
+      usageBytes: 0,
+      quotaBytes: 0,
+      usagePercent: 0,
+      hasEstimate: false,
+    };
+  }
+}
+
 export function saveSettings(settings: AppSettings): StorageResult {
   const validated = appSettingsSchema.safeParse(settings);
   if (!validated.success) return { ok: false, error: validationMessage(validated.error) };
@@ -778,7 +828,7 @@ export function isProfileComplete(profile: BusinessProfile) {
 }
 
 /** Resize raster images before storing them locally. SVG is intentionally unsupported. */
-export async function fileToDataUrl(file: File, maxDim = 800): Promise<string> {
+export async function fileToDataUrl(file: File, maxDim = 900): Promise<string> {
   if (!["image/png", "image/jpeg", "image/jpg", "image/webp"].includes(file.type)) {
     throw new Error("Unsupported logo format");
   }
@@ -801,12 +851,5 @@ export async function fileToDataUrl(file: File, maxDim = 800): Promise<string> {
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Image processing is unavailable");
   context.drawImage(image, 0, 0, canvas.width, canvas.height);
-  return canvas.toDataURL(
-    file.type === "image/png"
-      ? "image/png"
-      : file.type === "image/webp"
-        ? "image/webp"
-        : "image/jpeg",
-    0.88,
-  );
+  return canvas.toDataURL(file.type === "image/png" ? "image/png" : "image/jpeg", 0.88);
 }

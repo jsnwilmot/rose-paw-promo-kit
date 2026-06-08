@@ -207,6 +207,7 @@ function CreatePage() {
             logoDataUrl={profile.logoDataUrl}
             useLogo={form.useLogo}
             subtitle="Kit header preview"
+            showAppBrand
           />
         ) : (
           <div className="rounded-2xl border border-dashed border-border bg-muted/40 p-4 text-sm text-muted-foreground">
@@ -220,7 +221,10 @@ function CreatePage() {
 
         <form onSubmit={submit} className="space-y-6">
           <section className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-card space-y-4">
-            <h2 className="font-display text-xl font-semibold">The campaign</h2>
+            <h2 className="font-display text-xl font-semibold">The Foundation</h2>
+            <p className="text-sm text-muted-foreground">
+              Define the campaign basics first so every section in your kit stays consistent.
+            </p>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Campaign name" htmlFor="campaign-name" error={errors.campaignName}>
                 <Input
@@ -293,7 +297,10 @@ function CreatePage() {
           </section>
 
           <section className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-card space-y-4">
-            <h2 className="font-display text-xl font-semibold">The message</h2>
+            <h2 className="font-display text-xl font-semibold">Who are we reaching?</h2>
+            <p className="text-sm text-muted-foreground">
+              Add customer and location context so generated copy sounds local and specific.
+            </p>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Target customer" htmlFor="target-customer">
                 <Input
@@ -355,7 +362,7 @@ function CreatePage() {
 
           <section className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-card space-y-5">
             <div>
-              <h2 className="font-display text-xl font-semibold">Choose your kit outputs</h2>
+              <h2 className="font-display text-xl font-semibold">Delivery Channels</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Pick the content you actually need. Your campaign calendar will be built around
                 these choices.
@@ -431,7 +438,7 @@ function CreatePage() {
           <section className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-card">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <h2 className="font-display text-xl font-semibold">Use saved business logo</h2>
+                <h2 className="font-display text-xl font-semibold">Campaign Snapshot</h2>
                 <p className="text-sm text-muted-foreground">
                   {profile.logoDataUrl
                     ? "Your saved logo will appear on this kit's header and printable summary."
@@ -447,12 +454,18 @@ function CreatePage() {
             </div>
           </section>
 
-          <div className="flex justify-end">
-            <Button type="submit" size="lg" className="gap-2">
-              <Sparkles className="size-4" />
-              Generate Promo Kit
-            </Button>
-          </div>
+          <section className="rounded-2xl border border-border bg-card p-5 shadow-card">
+            <h2 className="font-display text-xl font-semibold">Ready to generate</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Once generated, your kit is saved locally and includes a campaign calendar by default.
+            </p>
+            <div className="mt-4 flex justify-end">
+              <Button type="submit" size="lg" className="gap-2">
+                <Sparkles className="size-4" />
+                Generate Promo Kit
+              </Button>
+            </div>
+          </section>
         </form>
       </div>
     </AppLayout>

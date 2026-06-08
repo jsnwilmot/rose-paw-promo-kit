@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
+import { AppLogo } from "@/components/AppLogo";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
@@ -9,6 +10,7 @@ import {
   Sparkles,
   Image as ImageIcon,
   ClipboardList,
+  Inbox,
 } from "lucide-react";
 import {
   isProfileComplete,
@@ -51,6 +53,9 @@ function Dashboard() {
   }, []);
 
   const visibleKits = kits.filter((kit) => kit.status !== "archived");
+  const activeKits = kits.filter((kit) => kit.status === "active");
+  const archivedKits = kits.filter((kit) => kit.status === "archived");
+  const requestKits = kits.filter((kit) => kit.source === "design-request-import");
   const completion = profile ? isProfileComplete(profile) : null;
   const completedCount = completion ? Object.values(completion).filter(Boolean).length : 0;
   const totalCount = completion ? Object.values(completion).length : 6;
@@ -72,6 +77,9 @@ function Dashboard() {
     <AppLayout>
       <div className="space-y-8">
         <header>
+          <div className="mb-4 rounded-3xl border border-border bg-card p-4 shadow-card sm:p-5">
+            <AppLogo linkToHome={false} subtitle="Heritage & Heart Campaign Builder" />
+          </div>
           <p className="text-sm font-medium uppercase tracking-wider text-accent">Dashboard</p>
           <h1 className="mt-1 font-display text-3xl sm:text-4xl font-semibold text-foreground">
             Welcome{profile?.businessName ? `, ${profile.businessName}` : ""} 👋
@@ -96,6 +104,13 @@ function Dashboard() {
             </Button>
           </div>
         </div>
+
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard label="Saved kits" value={String(visibleKits.length)} />
+          <StatCard label="Active kits" value={String(activeKits.length)} />
+          <StatCard label="Archived kits" value={String(archivedKits.length)} />
+          <StatCard label="Profile complete" value={`${profilePct}%`} />
+        </section>
 
         <div className="grid gap-5 md:grid-cols-2">
           <div className="rounded-2xl border border-border bg-card p-6 shadow-card">
@@ -139,7 +154,7 @@ function Dashboard() {
           </div>
 
           <div className="rounded-2xl border border-border bg-card p-6 shadow-card">
-            <h3 className="font-display text-lg font-semibold mb-3">How this works</h3>
+            <h3 className="font-display text-lg font-semibold mb-3">Getting started checklist</h3>
             <ol className="space-y-3 text-sm">
               <li className="flex gap-3">
                 <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent font-semibold">
@@ -169,6 +184,9 @@ function Dashboard() {
                 </span>
               </li>
             </ol>
+            <Button asChild className="mt-4 w-full">
+              <Link to="/create">Create Promo Kit</Link>
+            </Button>
           </div>
         </div>
 
@@ -211,6 +229,40 @@ function Dashboard() {
           )}
         </div>
 
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-card">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="font-display text-lg font-semibold">Recent design requests</h3>
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/requests">Open requests</Link>
+            </Button>
+          </div>
+          {requestKits.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border bg-muted/30 p-6 text-center text-sm text-muted-foreground">
+              <Inbox className="mx-auto mb-2 size-6 text-muted-foreground/70" />
+              No imported design requests yet. Use the Requests page to import a client package.
+            </div>
+          ) : (
+            <ul className="divide-y divide-border">
+              {requestKits.slice(0, 4).map((requestKit) => (
+                <li key={requestKit.id} className="flex items-center justify-between gap-3 py-3">
+                  <div className="min-w-0">
+                    <div className="truncate font-medium">{requestKit.campaignName}</div>
+                    <div className="truncate text-xs text-muted-foreground">
+                      {requestKit.requesterName || "Requester not provided"} ·{" "}
+                      {new Date(requestKit.createdAt).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <Button asChild size="sm" variant="outline">
+                    <Link to="/kit/$id" params={{ id: requestKit.id }}>
+                      Open
+                    </Link>
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
         <div className="rounded-2xl border border-border bg-cream/50 p-5 flex items-center gap-3 text-sm text-muted-foreground">
           <ImageIcon className="size-5 text-accent shrink-0" />
           {profile?.logoDataUrl ? (
@@ -227,5 +279,14 @@ function Dashboard() {
         </div>
       </div>
     </AppLayout>
+  );
+}
+
+function StatCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
+      <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="mt-1 font-display text-3xl font-semibold text-foreground">{value}</p>
+    </div>
   );
 }

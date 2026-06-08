@@ -57,7 +57,8 @@ const TONES = [
   "Simple and direct",
 ];
 const ALLOWED = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
-const MAX_BYTES = 2 * 1024 * 1024;
+const MAX_BYTES = 8 * 1024 * 1024;
+const WARN_BYTES = 2 * 1024 * 1024;
 const BUSINESS_PRESETS = getBusinessPresets();
 
 function ProfilePage() {
@@ -81,10 +82,11 @@ function ProfilePage() {
       return;
     }
     if (file.size > MAX_BYTES) {
-      toast.error("That image is over 2 MB. Please choose a smaller file.");
+      toast.error("That image is over 8 MB. Please choose a smaller file.");
       return;
     }
     try {
+      const dimensions = await readImageDimensions(file);
       const dataUrl = await fileToDataUrl(file);
       setP((prev) => ({
         ...prev,
@@ -93,7 +95,14 @@ function ProfilePage() {
         logoMimeType: file.type,
         logoUploadedAt: new Date().toISOString(),
       }));
-      toast.success("Logo ready — don't forget to save.");
+      const resized = Math.max(dimensions.width, dimensions.height) > 900;
+      if (resized) {
+        toast("Logo resized to fit within 900px for reliable storage and print quality.");
+      }
+      if (file.size > WARN_BYTES) {
+        toast("Large logos can use more browser storage. Export backups regularly.");
+      }
+      toast.success("Logo ready - don't forget to save.");
     } catch {
       toast.error("Couldn't read that image. Please try another.");
     }
@@ -257,6 +266,40 @@ function ProfilePage() {
                 </SelectContent>
               </Select>
             </Field>
+            <Field label="Local SEO keywords" hint="Optional. Separate phrases with commas.">
+              <Textarea
+                rows={2}
+                value={p.localSeoKeywords}
+                onChange={(e) => update("localSeoKeywords", e.target.value)}
+                placeholder="e.g. dog groomer lethbridge, mobile grooming near me"
+              />
+            </Field>
+            <Field
+              label="Google Business Profile attributes"
+              hint="Optional. Mention attributes to highlight in GBP posts."
+            >
+              <Textarea
+                rows={2}
+                value={p.gbpAttributes}
+                onChange={(e) => update("gbpAttributes", e.target.value)}
+                placeholder="e.g. women-owned, wheelchair accessible entrance"
+              />
+            </Field>
+            <Field label="Trust points" hint="Optional. Add proof points for sales copy.">
+              <Textarea
+                rows={2}
+                value={p.trustPoints}
+                onChange={(e) => update("trustPoints", e.target.value)}
+                placeholder="e.g. 120+ five-star reviews, insured, 8 years in business"
+              />
+            </Field>
+            <Field label="Review response tone" hint="Optional. How should review replies sound?">
+              <Input
+                value={p.reviewResponseTone}
+                onChange={(e) => update("reviewResponseTone", e.target.value)}
+                placeholder="e.g. Warm, grateful, and concise"
+              />
+            </Field>
           </section>
 
           <section className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-card space-y-4">
@@ -281,7 +324,7 @@ function ProfilePage() {
                 Business logo
               </Label>
               <p className="mb-3 text-xs text-muted-foreground">
-                Use a clear PNG, JPG, or WEBP logo up to 2 MB. Images are resized before local
+                Use a clear PNG, JPG, or WEBP logo up to 8 MB. Images are resized before local
                 storage.
               </p>
               <div className="flex flex-col sm:flex-row items-start gap-4">
@@ -412,6 +455,21 @@ function ProfilePage() {
       </div>
     </AppLayout>
   );
+}
+
+async function readImageDimensions(file: File): Promise<{ width: number; height: number }> {
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.src = objectUrl;
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve();
+      image.onerror = () => reject();
+    });
+    return { width: image.width, height: image.height };
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
 }
 
 function Field({

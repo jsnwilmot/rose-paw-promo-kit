@@ -7,6 +7,7 @@ import { SectionCard } from "@/components/SectionCard";
 import { BrandHeader } from "@/components/BrandHeader";
 import { DeleteKitDialog, RenameKitDialog } from "@/components/KitActionDialogs";
 import { DesignHelpRequestDialog } from "@/components/DesignHelpRequestDialog";
+import { AppLogo } from "@/components/AppLogo";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -30,6 +31,7 @@ import {
 import { ArrowLeft, Printer, Trash2, Pencil, Files } from "lucide-react";
 import { toast } from "sonner";
 import { resolveSelectedOutputs } from "@/lib/output-selection";
+import appLogoSrc from "@/assets/logo-rnp-local-marketing-kit.png";
 
 export const Route = createFileRoute("/kit/$id")({
   head: () => ({ meta: [{ title: "Promo Kit — Rose & Paw" }] }),
@@ -187,6 +189,9 @@ function KitPage() {
         </div>
 
         <div>
+          <div className="mb-4 rounded-3xl border border-border bg-card p-4 shadow-card">
+            <AppLogo linkToHome={false} subtitle="Rose & Paw Local Marketing Kit" />
+          </div>
           <p className="text-sm font-medium uppercase tracking-wider text-accent">Generated kit</p>
           <h1 className="mt-1 font-display text-3xl sm:text-4xl font-semibold">
             {kit.campaignName}
@@ -219,6 +224,7 @@ function KitPage() {
           logoDataUrl={logoUrl}
           useLogo={kit.useLogo}
           subtitle={`${kit.campaignGoal} · ${g.summary.dates}`}
+          showAppBrand
         />
 
         <SectionCard title="1. Campaign summary" action={<CopyButton text={summaryText(kit)} />}>
@@ -483,6 +489,16 @@ function PrintableSummary({
   const g = kit.generatedSections;
   return (
     <div className="rounded-xl border border-border bg-background p-5 space-y-4">
+      <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2">
+        <img
+          src={appLogoSrc}
+          alt="Rose and Paw Local Marketing Kit"
+          className="h-9 w-9 object-contain"
+        />
+        <div className="text-xs text-muted-foreground">
+          Generated with Rose &amp; Paw Local Marketing Kit Builder
+        </div>
+      </div>
       <div className="flex items-center gap-4 border-b border-border pb-4">
         <div className="flex h-16 w-[140px] items-center justify-center overflow-hidden">
           {kit.useLogo && logoUrl ? (

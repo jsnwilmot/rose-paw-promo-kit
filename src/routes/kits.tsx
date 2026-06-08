@@ -18,7 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import {
   duplicateKitById,
   renameKitById,
@@ -48,6 +47,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { resolveSelectedOutputs } from "@/lib/output-selection";
 
 export const Route = createFileRoute("/kits")({
   head: () => ({
@@ -70,7 +70,7 @@ function KitsPage() {
   const [businessFilter, setBusinessFilter] = useState("all");
   const [campaignFilter, setCampaignFilter] = useState("all");
   const [sort, setSort] = useState<SortOption>("newest");
-  const [showArchived, setShowArchived] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "active" | "archived">("all");
   const [profile, setProfile] = useState<BusinessProfile>(emptyProfile);
   const [settings, setSettings] = useState<AppSettings>(() => loadSettings());
   const [renameTarget, setRenameTarget] = useState<PromoKit | null>(null);
@@ -103,7 +103,10 @@ function KitsPage() {
   const businessTypes = uniqueSorted(kits.map((kit) => kit.businessType).filter(Boolean));
   const normalizedQuery = query.trim().toLowerCase();
   const visibleKits = kits
-    .filter((kit) => showArchived || kit.status !== "archived")
+    .filter((kit) => {
+      if (statusFilter === "all") return kit.status !== "archived";
+      return kit.status === statusFilter;
+    })
     .filter((kit) => businessFilter === "all" || kit.businessName === businessFilter)
     .filter((kit) => {
       if (campaignFilter === "all") return true;
@@ -115,7 +118,10 @@ function KitsPage() {
 
   const archivedCount = kits.filter((kit) => kit.status === "archived").length;
   const hasActiveFilters =
-    !!query.trim() || businessFilter !== "all" || campaignFilter !== "all" || showArchived;
+    !!query.trim() ||
+    businessFilter !== "all" ||
+    campaignFilter !== "all" ||
+    statusFilter !== "all";
 
   function rename(title: string) {
     if (!renameTarget) return;
@@ -178,7 +184,7 @@ function KitsPage() {
     setBusinessFilter("all");
     setCampaignFilter("all");
     setSort("newest");
-    setShowArchived(false);
+    setStatusFilter("all");
   }
 
   return (
@@ -262,16 +268,27 @@ function KitsPage() {
                   </SelectContent>
                 </Select>
               </FilterField>
+              <FilterField label="Status">
+                <Select
+                  value={statusFilter}
+                  onValueChange={(value: "all" | "draft" | "active" | "archived") =>
+                    setStatusFilter(value)
+                  }
+                >
+                  <SelectTrigger aria-label="Filter by status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FilterField>
             </div>
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <label className="flex cursor-pointer items-center gap-2 text-sm">
-                <Switch
-                  aria-label="Show archived kits"
-                  checked={showArchived}
-                  onCheckedChange={setShowArchived}
-                />
-                Show archived kits{archivedCount > 0 ? ` (${archivedCount})` : ""}
-              </label>
+              <p className="text-sm text-muted-foreground">Archived kits: {archivedCount}.</p>
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 <span>
                   {visibleKits.length} of {kits.length} kits
@@ -294,7 +311,7 @@ function KitsPage() {
             <h2 className="mt-3 font-display text-xl">No saved kits match</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Try a different search or filter
-              {!showArchived && archivedCount > 0 ? ", or show archived kits" : ""}.
+              {statusFilter !== "archived" && archivedCount > 0 ? ", or switch to archived" : ""}.
             </p>
             <Button variant="outline" className="mt-4" onClick={clearFilters}>
               Clear filters
@@ -364,6 +381,10 @@ function KitCard({
 }) {
   const updated = new Date(kit.updatedAt).toLocaleDateString();
   const created = new Date(kit.createdAt).toLocaleDateString();
+  const selectedOutputs = resolveSelectedOutputs(kit.formInputs.selectedOutputs);
+  const outputCount = Object.entries(selectedOutputs).filter(
+    ([key, selected]) => key !== "printableSummary" && selected,
+  ).length;
   const preview =
     kit.generatedSections.summary.offer !== "No offer added"
       ? kit.generatedSections.summary.offer
@@ -408,6 +429,7 @@ function KitCard({
       <div className="mt-3 text-xs text-muted-foreground">
         Created {created}
         {updated !== created ? ` · Updated ${updated}` : ""}
+        {` · ${outputCount} outputs`}
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         <Button asChild size="sm">

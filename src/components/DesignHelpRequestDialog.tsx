@@ -35,6 +35,7 @@ import {
   designHelpRequestFileName,
 } from "@/lib/design-help-request";
 import { loadKits, type AppSettings, type BusinessProfile, type PromoKit } from "@/lib/storage";
+import appLogoSrc from "@/assets/logo-rnp-local-marketing-kit.png";
 
 type SubmitState = "idle" | "sending" | "success" | "error";
 const DESIGN_HELP_COOLDOWN_MS = 60_000;
@@ -256,6 +257,16 @@ export function DesignHelpRequestDialog({
       <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto">
         <form onSubmit={submit} className="space-y-5">
           <DialogHeader>
+            <div className="mb-2 flex items-center gap-2 rounded-xl border border-border bg-card p-2">
+              <img
+                src={appLogoSrc}
+                alt="Rose and Paw Local Marketing Kit"
+                className="h-9 w-9 object-contain"
+              />
+              <span className="text-xs text-muted-foreground">
+                Rose &amp; Paw Local Marketing Kit Builder
+              </span>
+            </div>
             <DialogTitle>Create design help request</DialogTitle>
             <DialogDescription>
               Review the package, add your contact details, and send it directly to Rose &amp; Paw
@@ -285,8 +296,9 @@ export function DesignHelpRequestDialog({
             <Alert>
               <AlertTitle>Web3Forms key missing</AlertTitle>
               <AlertDescription>
-                Sending is disabled because VITE_WEB3FORMS_ACCESS_KEY is not configured. Add it to
-                .env.local and restart the dev server. Copy and JSON download still work.
+                Sending is disabled because VITE_WEB3FORMS_ACCESS_KEY is missing or still set to a
+                placeholder value. Add a real key in .env.local and restart the dev server. Copy and
+                JSON download still work.
               </AlertDescription>
             </Alert>
           )}

@@ -2,6 +2,11 @@
 
 Rose & Paw Local Promo Kit Builder is a local-first MVP for small businesses. A short campaign form generates ready-to-paste Facebook posts, Instagram captions, hashtag suggestions, Google Business Profile updates, flyer copy, email newsletter copy, review requests, website copy, ad copy, image prompts, and a seven-day posting plan.
 
+The current UI follows a Stitch-inspired Heritage & Heart direction: warm parchment backgrounds,
+soft raised white cards, heritage-brown typography, and pupil-blue action states. The app logo is
+stored as a source asset at `src/assets/logo-rnp-local-marketing-kit.png` and used across shell,
+dashboard, kit preview, and the design-help request flow.
+
 Generated kits preserve the logo used at creation time, use extra campaign notes as writing context,
 and can be marked Draft, Active, or Completed. Saved-kit deletion includes a short Undo action.
 Copy generation uses short, channel-specific local-business templates that favour clear services,
@@ -21,6 +26,12 @@ calendar built around the selected channels.
 ## Privacy and local storage
 
 Business profiles, uploaded logos, settings, and generated kits stay in the browser's LocalStorage on the current device. The production app does not send runtime errors or app data to Lovable.
+
+Saved kits are no longer artificially constrained to small counts. The dashboard still highlights
+up to four recent kits, while Saved Kits lists all non-archived kits by default.
+
+Logo snapshots are deduplicated in local storage where possible, legacy kit snapshots are still
+supported, and browser near-quota warnings are shown only when usage is genuinely high.
 
 Clearing browser data, using private browsing, changing browsers, or changing devices can remove or hide saved data. Export a backup regularly.
 
@@ -50,6 +61,9 @@ For local setup:
 2. Add `VITE_WEB3FORMS_ACCESS_KEY=your_real_key_here`.
 3. Restart the dev server after changing env vars.
 
+The app treats empty or placeholder values for `VITE_WEB3FORMS_ACCESS_KEY` as missing and shows a
+clear warning while keeping copy and JSON fallback actions available.
+
 Keep `.env.local` out of git. `.env.example` should only contain a placeholder value.
 
 Because this is static hosting, the Web3Forms key is included in the client bundle and is not
@@ -58,7 +72,7 @@ secret. Current static-only mitigations are:
 - Hidden honeypot field (`botcheck`) blocks obvious bot submissions.
 - Client-side cooldown limits repeated submissions from one browser to one request per 60 seconds.
 - Required-field validation and trimmed values run before submission.
-- Base64 logo data is not submitted.
+- Base64 logo data is not submitted (neither app logo nor client logo).
 
 If `VITE_WEB3FORMS_ACCESS_KEY` is missing, sending is disabled gracefully and users can still copy
 the readable message and download the JSON request package.

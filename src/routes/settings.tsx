@@ -25,15 +25,22 @@ import {
 } from "@/components/ui/select";
 import {
   defaultSettings,
+  emptyProfile,
   exportAll,
+  getBrowserStorageEstimate,
+  getStorageAudit,
   importValidated,
+  loadKits,
   loadSettings,
+  saveKits,
+  saveProfile,
   saveSettings,
   validateImport,
   type AppSettings,
+  type BrowserStorageEstimate,
   type ValidatedImport,
 } from "@/lib/storage";
-import { Download, Upload, X } from "lucide-react";
+import { AlertTriangle, Download, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/settings")({
@@ -56,9 +63,16 @@ function SettingsPage() {
   const [loaded, setLoaded] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [pendingImport, setPendingImport] = useState<ValidatedImport | null>(null);
+  const [storageEstimate, setStorageEstimate] = useState<BrowserStorageEstimate>({
+    usageBytes: 0,
+    quotaBytes: 0,
+    usagePercent: 0,
+    hasEstimate: false,
+  });
 
   useEffect(() => {
     setS(loadSettings());
+    getBrowserStorageEstimate().then(setStorageEstimate);
     setLoaded(true);
   }, []);
 
@@ -105,7 +119,45 @@ function SettingsPage() {
     }
     toast.success("Data imported.");
     setS(loadSettings());
+    getBrowserStorageEstimate().then(setStorageEstimate);
     setPendingImport(null);
+  }
+
+  function clearArchivedKits() {
+    const kits = loadKits();
+    const nonArchived = kits.filter((kit) => kit.status !== "archived");
+    if (nonArchived.length === kits.length) {
+      toast("No archived kits to clear.");
+      return;
+    }
+    const result = saveKits(nonArchived);
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    toast.success("Archived kits cleared.");
+    getBrowserStorageEstimate().then(setStorageEstimate);
+  }
+
+  function resetLocalData() {
+    const profileResult = saveProfile(emptyProfile);
+    if (!profileResult.ok) {
+      toast.error(profileResult.error);
+      return;
+    }
+    const kitsResult = saveKits([]);
+    if (!kitsResult.ok) {
+      toast.error(kitsResult.error);
+      return;
+    }
+    const settingsResult = saveSettings(defaultSettings);
+    if (!settingsResult.ok) {
+      toast.error(settingsResult.error);
+      return;
+    }
+    setS(defaultSettings);
+    toast.success("Local app data reset on this device.");
+    getBrowserStorageEstimate().then(setStorageEstimate);
   }
 
   if (!loaded)
@@ -114,6 +166,8 @@ function SettingsPage() {
         <div className="h-96" />
       </AppLayout>
     );
+
+  const storageAudit = getStorageAudit();
 
   return (
     <AppLayout>
@@ -271,7 +325,85 @@ function SettingsPage() {
             </div>
           )}
         </section>
+
+        <section className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-card space-y-4">
+          <h2 className="font-display text-xl font-semibold">Storage usage</h2>
+          <p className="text-sm text-muted-foreground">
+            {storageAudit.nearQuota
+              ? "Browser storage is getting full. Export a backup, then archive or delete old kits."
+              : "Storage is healthy. Export backups regularly, especially before large imports."}
+          </p>
+          <dl className="grid gap-3 text-sm sm:grid-cols-2">
+            <div className="rounded-lg bg-muted/40 px-3 py-2">
+              <dt className="text-muted-foreground">Saved kits</dt>
+              <dd className="font-medium">{storageAudit.kitCount}</dd>
+            </div>
+            <div className="rounded-lg bg-muted/40 px-3 py-2">
+              <dt className="text-muted-foreground">Estimated local usage</dt>
+              <dd className="font-medium">
+                {storageEstimate.hasEstimate
+                  ? `${storageEstimate.usagePercent}% (${formatBytes(storageEstimate.usageBytes)} of ${formatBytes(storageEstimate.quotaBytes)})`
+                  : `${formatBytes(storageAudit.totalBytes)} used`}
+              </dd>
+            </div>
+          </dl>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline">Clear archived kits</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Clear archived kits?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Archived kits will be permanently removed from this device.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={clearArchivedKits}>
+                  Clear archived kits
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </section>
+
+        <section className="rounded-2xl border border-destructive/35 bg-card p-5 sm:p-6 shadow-card space-y-4">
+          <h2 className="font-display text-xl font-semibold text-destructive">Danger zone</h2>
+          <div className="flex items-start gap-3 rounded-xl border border-destructive/25 bg-destructive/10 p-3 text-sm">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
+            <p>
+              Resetting local data deletes the active profile, saved kits, and settings from this
+              browser only. Export a backup first.
+            </p>
+          </div>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive">Reset local app data</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Reset all local app data?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone unless you re-import a backup JSON file.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={resetLocalData}>Reset now</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </section>
       </div>
     </AppLayout>
   );
+}
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(1)} KB`;
+  const mb = kb / 1024;
+  return `${mb.toFixed(2)} MB`;
 }

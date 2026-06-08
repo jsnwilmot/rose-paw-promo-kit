@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
+import { AppLogo } from "@/components/AppLogo";
 import {
   Sheet,
   SheetContent,
@@ -41,7 +42,7 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
             aria-current={active ? "page" : undefined}
             className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
               active
-                ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-soft"
+                ? "bg-primary text-primary-foreground shadow-soft"
                 : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
             }`}
           >
@@ -54,38 +55,21 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-function Brand({ small = false }: { small?: boolean }) {
-  return (
-    <Link to="/" className="flex min-w-0 items-center gap-3">
-      <img
-        src="/rose-paw-logo.png"
-        alt="Rose & Paw Digital Designs"
-        className={
-          small ? "h-12 w-14 shrink-0 object-contain" : "h-20 w-24 shrink-0 object-contain"
-        }
-      />
-      <div className="min-w-0 leading-tight">
-        <div className="font-display text-lg font-semibold text-primary">Rose &amp; Paw</div>
-        <div className="text-xs text-muted-foreground">Local marketing made simple.</div>
-      </div>
-    </Link>
-  );
-}
-
 export function AppLayout({ children }: { children?: ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-[260px_1fr]">
-      <aside className="hidden lg:flex lg:flex-col gap-6 border-r border-sidebar-border bg-sidebar px-5 py-6 sticky top-0 h-screen">
-        <Brand />
+    <div className="min-h-screen lg:grid lg:grid-cols-[285px_1fr]">
+      <aside className="sticky top-0 hidden h-screen flex-col gap-6 border-r border-sidebar-border bg-sidebar px-5 py-6 lg:flex">
+        <AppLogo subtitle="Heritage & Heart Toolkit" />
         <NavItems />
-        <div className="mt-auto rounded-xl bg-cream/60 p-3 text-xs text-muted-foreground">
-          Built for small local businesses. Your data stays on this device.
+        <div className="mt-auto rounded-2xl border border-sidebar-border bg-card/80 p-3 text-xs text-muted-foreground">
+          Built for small local businesses. Data stays on this device unless you export or submit a
+          design request.
         </div>
       </aside>
 
-      <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background/90 backdrop-blur px-4 py-3">
-        <Brand small />
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background/90 px-4 py-3 backdrop-blur lg:hidden">
+        <AppLogo compact subtitle="Local Kit Builder" />
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
             <button
@@ -102,7 +86,7 @@ export function AppLayout({ children }: { children?: ReactNode }) {
               Navigate between the marketing kit builder pages.
             </SheetDescription>
             <div className="flex flex-col gap-6 pt-6">
-              <Brand small />
+              <AppLogo compact subtitle="Heritage & Heart Toolkit" />
               <NavItems onNavigate={() => setOpen(false)} />
             </div>
           </SheetContent>

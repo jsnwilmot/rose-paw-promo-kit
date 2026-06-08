@@ -141,6 +141,12 @@ Facebook: ${formatValue(profile.facebookLink)}
 Instagram: ${formatValue(profile.instagramLink)}
 Google Business Profile: ${formatValue(profile.googleBusinessProfileLink)}
 
+LOCAL MARKETING NOTES
+Local SEO keywords: ${formatValue(profile.localSeoKeywords)}
+GBP attributes: ${formatValue(profile.gbpAttributes)}
+Trust points: ${formatValue(profile.trustPoints)}
+Review response tone: ${formatValue(profile.reviewResponseTone)}
+
 PROMO KIT
 Kit name: ${formatValue(kit.campaignName)}
 Kit ID: ${formatValue(kit.id)}
@@ -196,6 +202,10 @@ export function buildDesignHelpRequestPackage({
       mainServices: profile.mainServices,
       targetCustomer: profile.targetCustomer,
       brandTone: profile.brandTone,
+      localSeoKeywords: profile.localSeoKeywords,
+      gbpAttributes: profile.gbpAttributes,
+      trustPoints: profile.trustPoints,
+      reviewResponseTone: profile.reviewResponseTone,
       websiteLink: profile.websiteLink,
       facebookLink: profile.facebookLink,
       instagramLink: profile.instagramLink,
