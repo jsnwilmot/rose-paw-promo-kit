@@ -285,8 +285,8 @@ export function DesignHelpRequestDialog({
             <Alert>
               <AlertTitle>Web3Forms key missing</AlertTitle>
               <AlertDescription>
-                Sending is unavailable until VITE_WEB3FORMS_ACCESS_KEY is configured. Copy and JSON
-                download still work.
+                Sending is disabled because VITE_WEB3FORMS_ACCESS_KEY is not configured. Add it to
+                .env.local and restart the dev server. Copy and JSON download still work.
               </AlertDescription>
             </Alert>
           )}

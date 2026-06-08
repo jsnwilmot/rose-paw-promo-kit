@@ -22,7 +22,14 @@ import {
   type DesignRequestImportPreview,
   type DesignRequestPackage,
 } from "@/lib/design-request-import";
-import { deleteKit, loadProfile, loadSettings, saveProfile, upsertKit } from "@/lib/storage";
+import {
+  deleteKit,
+  getStorageAudit,
+  loadProfile,
+  loadSettings,
+  saveProfile,
+  upsertKit,
+} from "@/lib/storage";
 import { AlertCircle, CheckCircle2, FileJson, Inbox, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -157,6 +164,12 @@ function RequestsPage() {
     if (kitId)
       toast.success("Design request imported. A saved kit was created from the client request.");
     if (profileUpdated) toast.success("Business profile was updated from the request.");
+    const audit = getStorageAudit();
+    if (audit.nearQuota) {
+      toast(
+        "Storage warning: saved kits are getting large. Export a backup and remove old kits soon.",
+      );
+    }
   }
 
   return (

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { generateKit } from "@/lib/generator";
 import {
+  getStorageAudit,
   loadProfile,
   loadSettings,
   upsertKit,
@@ -174,6 +175,12 @@ function CreatePage() {
     if (!result.ok) {
       toast.error(result.error);
       return;
+    }
+    const audit = getStorageAudit();
+    if (audit.nearQuota) {
+      toast(
+        "Storage warning: saved kits are getting large. Export a backup and remove old kits soon.",
+      );
     }
     toast.success("Promo kit generated.");
     navigate({ to: "/kit/$id", params: { id: kit.id } });

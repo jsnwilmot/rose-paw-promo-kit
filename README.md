@@ -42,8 +42,15 @@ explicit confirmation.
 ### Static submission security note
 
 Design Help Request submission is currently static-only and sends directly to Web3Forms from the
-browser. Configure the key with `VITE_WEB3FORMS_ACCESS_KEY` in a local `.env` file (see
-`.env.example`).
+browser.
+
+For local setup:
+
+1. Create `.env.local` in the project root.
+2. Add `VITE_WEB3FORMS_ACCESS_KEY=your_real_key_here`.
+3. Restart the dev server after changing env vars.
+
+Keep `.env.local` out of git. `.env.example` should only contain a placeholder value.
 
 Because this is static hosting, the Web3Forms key is included in the client bundle and is not
 secret. Current static-only mitigations are:
@@ -70,7 +77,8 @@ npm run lint
 npm run build
 ```
 
-Create `.env` from `.env.example` and set `VITE_WEB3FORMS_ACCESS_KEY` for live request sending.
+Create `.env.local` from `.env.example` and set `VITE_WEB3FORMS_ACCESS_KEY` for live request
+sending.
 
 Use `npm run preview` to serve a production build locally.
 

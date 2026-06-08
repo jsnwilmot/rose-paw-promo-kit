@@ -101,6 +101,7 @@ export type PromoKit = {
   formInputs: PromoFormInputs;
   generatedSections: GeneratedSections;
   useLogo: boolean;
+  logoSnapshotRef?: string;
   logoSnapshotDataUrl: string;
   logoSnapshotFileName: string;
   status: KitStatus;
@@ -143,6 +144,7 @@ export type ValidatedImport = {
 const KEYS = {
   profile: "rp.businessProfile",
   kits: "rp.promoKits",
+  logoBlobs: "rp.logoBlobs",
   settings: "rp.appSettings",
 } as const;
 
@@ -322,6 +324,7 @@ const promoKitSchema = z.object({
   formInputs: promoFormInputsSchema,
   generatedSections: generatedSectionsSchema,
   useLogo: z.boolean(),
+  logoSnapshotRef: z.string().optional(),
   logoSnapshotDataUrl: logoDataUrl.default(""),
   logoSnapshotFileName: z.string().default(""),
   status: z.enum(["draft", "active", "completed", "archived"]).default("draft"),
@@ -353,8 +356,94 @@ const importSchema = z.object({
   appSettings: appSettingsSchema,
 });
 
+type LogoBlobStore = Record<string, { dataUrl: string; fileName: string }>;
+
+export type StorageAudit = {
+  kitCount: number;
+  kitsBytes: number;
+  logoBlobBytes: number;
+  totalBytes: number;
+  nearQuota: boolean;
+};
+
+const STORAGE_WARNING_BYTES = 4 * 1024 * 1024;
+
+const logoBlobStoreSchema = z.record(
+  z.object({
+    dataUrl: logoDataUrl,
+    fileName: z.string().default(""),
+  }),
+);
+
 function isBrowser() {
   return typeof window !== "undefined";
+}
+
+function jsonByteSize(value: string) {
+  return new TextEncoder().encode(value).length;
+}
+
+function hashString(value: string) {
+  let hash = 5381;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = ((hash << 5) + hash) ^ value.charCodeAt(index);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function makeLogoRef(dataUrl: string) {
+  return `logo_${hashString(dataUrl)}_${dataUrl.length.toString(36)}`;
+}
+
+function readLogoBlobStore(): LogoBlobStore {
+  if (!isBrowser()) return {};
+  try {
+    const raw = localStorage.getItem(KEYS.logoBlobs);
+    if (!raw) return {};
+    const parsed = logoBlobStoreSchema.safeParse(JSON.parse(raw));
+    return parsed.success ? parsed.data : {};
+  } catch {
+    return {};
+  }
+}
+
+function compactKitsForStorage(kits: PromoKit[], existingBlobs: LogoBlobStore) {
+  const logoBlobs: LogoBlobStore = {};
+  const compactedKits = kits.map((kit) => {
+    const compacted: PromoKit = { ...kit };
+
+    if (compacted.logoSnapshotDataUrl) {
+      const ref = makeLogoRef(compacted.logoSnapshotDataUrl);
+      logoBlobs[ref] = {
+        dataUrl: compacted.logoSnapshotDataUrl,
+        fileName: compacted.logoSnapshotFileName || "",
+      };
+      compacted.logoSnapshotRef = ref;
+      compacted.logoSnapshotDataUrl = "";
+    } else if (compacted.logoSnapshotRef && existingBlobs[compacted.logoSnapshotRef]) {
+      logoBlobs[compacted.logoSnapshotRef] = existingBlobs[compacted.logoSnapshotRef];
+      if (!compacted.logoSnapshotFileName) {
+        compacted.logoSnapshotFileName = existingBlobs[compacted.logoSnapshotRef].fileName;
+      }
+    } else {
+      compacted.logoSnapshotRef = undefined;
+    }
+
+    return compacted;
+  });
+
+  return { compactedKits, logoBlobs };
+}
+
+function hydrateKitLogo(kit: PromoKit, logoBlobs: LogoBlobStore): PromoKit {
+  if (kit.logoSnapshotDataUrl || !kit.logoSnapshotRef) return kit;
+  const resolved = logoBlobs[kit.logoSnapshotRef];
+  if (!resolved?.dataUrl) return kit;
+  return {
+    ...kit,
+    logoSnapshotDataUrl: resolved.dataUrl,
+    logoSnapshotFileName: kit.logoSnapshotFileName || resolved.fileName,
+  };
 }
 
 function storageFailure(error: unknown): StorageResult {
@@ -365,7 +454,7 @@ function storageFailure(error: unknown): StorageResult {
     ok: false,
     quotaExceeded,
     error: quotaExceeded
-      ? "This device's local storage is full. Remove an old kit or use a smaller logo, then try again."
+      ? "Browser storage is full. Export a backup, delete old kits, or remove large imported kits before saving another one."
       : "The app could not save data on this device. Your previous saved data is unchanged.",
   };
 }
@@ -445,10 +534,15 @@ export function loadKits(): PromoKit[] {
     const raw = localStorage.getItem(KEYS.kits);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    const result = z
-      .array(promoKitSchema)
-      .safeParse(Array.isArray(parsed) ? parsed.map(stripLegacyKitSvgLogo) : parsed);
-    return result.success ? result.data : [];
+    const logoBlobs = readLogoBlobStore();
+
+    const input = Array.isArray(parsed) ? parsed.map(stripLegacyKitSvgLogo) : [];
+    const validKits: PromoKit[] = [];
+    for (const candidate of input) {
+      const result = promoKitSchema.safeParse(candidate);
+      if (result.success) validKits.push(hydrateKitLogo(result.data, logoBlobs));
+    }
+    return validKits;
   } catch {
     return [];
   }
@@ -457,9 +551,37 @@ export function loadKits(): PromoKit[] {
 export function saveKits(kits: PromoKit[]): StorageResult {
   const validated = z.array(promoKitSchema).safeParse(kits);
   if (!validated.success) return { ok: false, error: validationMessage(validated.error) };
-  const result = write(KEYS.kits, validated.data);
-  if (result.ok && isBrowser()) window.dispatchEvent(new Event("rp:kits-changed"));
-  return result;
+
+  if (!isBrowser()) return { ok: true };
+
+  const previous = {
+    kits: localStorage.getItem(KEYS.kits),
+    logoBlobs: localStorage.getItem(KEYS.logoBlobs),
+  };
+
+  const { compactedKits, logoBlobs } = compactKitsForStorage(validated.data, readLogoBlobStore());
+
+  try {
+    localStorage.setItem(KEYS.logoBlobs, JSON.stringify(logoBlobs));
+    localStorage.setItem(KEYS.kits, JSON.stringify(compactedKits));
+  } catch (error) {
+    try {
+      if (previous.logoBlobs === null) localStorage.removeItem(KEYS.logoBlobs);
+      else localStorage.setItem(KEYS.logoBlobs, previous.logoBlobs);
+
+      if (previous.kits === null) localStorage.removeItem(KEYS.kits);
+      else localStorage.setItem(KEYS.kits, previous.kits);
+    } catch {
+      return {
+        ok: false,
+        error: "Saving failed and the browser could not fully restore the previous local data.",
+      };
+    }
+    return storageFailure(error);
+  }
+
+  window.dispatchEvent(new Event("rp:kits-changed"));
+  return { ok: true };
 }
 
 export function upsertKit(kit: PromoKit): StorageResult {
@@ -498,6 +620,44 @@ export function loadSettings(): AppSettings {
   } catch {
     return defaultSettings;
   }
+}
+
+export function getStorageAudit(): StorageAudit {
+  if (!isBrowser()) {
+    return {
+      kitCount: 0,
+      kitsBytes: 0,
+      logoBlobBytes: 0,
+      totalBytes: 0,
+      nearQuota: false,
+    };
+  }
+
+  const kitsRaw = localStorage.getItem(KEYS.kits) || "[]";
+  const logoBlobsRaw = localStorage.getItem(KEYS.logoBlobs) || "{}";
+  const profileRaw = localStorage.getItem(KEYS.profile) || "{}";
+  const settingsRaw = localStorage.getItem(KEYS.settings) || "{}";
+
+  let kitCount = 0;
+  try {
+    const parsed = JSON.parse(kitsRaw);
+    kitCount = Array.isArray(parsed) ? parsed.length : 0;
+  } catch {
+    kitCount = 0;
+  }
+
+  const kitsBytes = jsonByteSize(kitsRaw);
+  const logoBlobBytes = jsonByteSize(logoBlobsRaw);
+  const totalBytes =
+    kitsBytes + logoBlobBytes + jsonByteSize(profileRaw) + jsonByteSize(settingsRaw);
+
+  return {
+    kitCount,
+    kitsBytes,
+    logoBlobBytes,
+    totalBytes,
+    nearQuota: kitsBytes + logoBlobBytes >= STORAGE_WARNING_BYTES,
+  };
 }
 
 export function saveSettings(settings: AppSettings): StorageResult {
@@ -567,21 +727,25 @@ export function validateImport(
 
 export function importValidated(data: ValidatedImport): StorageResult {
   if (!isBrowser()) return { ok: false, error: "Import is only available in the browser." };
+  const compacted = compactKitsForStorage(data.promoKits, readLogoBlobStore());
   const previous = {
     profile: localStorage.getItem(KEYS.profile),
     kits: localStorage.getItem(KEYS.kits),
+    logoBlobs: localStorage.getItem(KEYS.logoBlobs),
     settings: localStorage.getItem(KEYS.settings),
   };
 
   try {
     localStorage.setItem(KEYS.profile, JSON.stringify(data.businessProfile));
-    localStorage.setItem(KEYS.kits, JSON.stringify(data.promoKits));
+    localStorage.setItem(KEYS.logoBlobs, JSON.stringify(compacted.logoBlobs));
+    localStorage.setItem(KEYS.kits, JSON.stringify(compacted.compactedKits));
     localStorage.setItem(KEYS.settings, JSON.stringify(data.appSettings));
   } catch (error) {
     try {
       for (const [key, value] of [
         [KEYS.profile, previous.profile],
         [KEYS.kits, previous.kits],
+        [KEYS.logoBlobs, previous.logoBlobs],
         [KEYS.settings, previous.settings],
       ] as const) {
         if (value === null) localStorage.removeItem(key);
