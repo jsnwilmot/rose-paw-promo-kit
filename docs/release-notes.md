@@ -24,4 +24,9 @@
 - Added deletion undo and accessible rename/delete/import dialogs.
 - Improved active navigation semantics and mobile menu keyboard behavior.
 - Fixed invalid kit links, SPA profile navigation, and repeated localStorage reads.
+- Tightened generated-content cleanup so template labels are removed only when they appear as
+  leaked line prefixes, and improved fallback topics in the campaign calendar when local details
+  are sparse.
+- Updated Generated Kit website copy rendering to preserve intentional line breaks for improved
+  readability.
 - Removed unused starter code, React Query setup, shadcn components, and dependencies.

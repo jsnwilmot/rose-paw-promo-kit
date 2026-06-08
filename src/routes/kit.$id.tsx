@@ -319,7 +319,7 @@ function KitPage() {
           >
             <div className="space-y-2">
               <div className="font-display text-xl">{g.websiteCopy.headline}</div>
-              <p className="text-sm">{g.websiteCopy.paragraph}</p>
+              <p className="text-sm whitespace-pre-line">{g.websiteCopy.paragraph}</p>
               <Button size="sm" className="mt-2">
                 {g.websiteCopy.button}
               </Button>

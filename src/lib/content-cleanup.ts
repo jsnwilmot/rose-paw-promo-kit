@@ -41,7 +41,7 @@ function removeEmptyBullets(value: string) {
 }
 
 const leakedLabelPattern =
-  /\b(Hook|Local detail|Local\/business detail|Service or offer|CTA|Angle|Caption line|Shot idea|Supporting line|Offer|Proof|Benefit|Question|Answer)\s*:\s*/gi;
+  /^\s*(Hook|Local detail|Local\/business detail|Service or offer|CTA|Angle|Caption line|Shot idea|Supporting line|Offer|Proof|Benefit|Question|Answer)\s*:\s*/i;
 
 function stripLeakedTemplateLabels(value: string) {
   return value

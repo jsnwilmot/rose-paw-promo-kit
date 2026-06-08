@@ -66,6 +66,10 @@ function buildCampaignCalendar(
   const service = brief.featuredServices[0] || "service";
   const theme = brief.campaignTheme;
   const cta = brief.callToAction;
+  const proof = brief.proofPoints[0] || "Clear local service details";
+  const primaryLocalDetail =
+    brief.localDetails[0] ||
+    (brief.serviceArea ? `Serving ${brief.serviceArea}` : "Serving local customers");
 
   const enabled = Object.entries(outputs)
     .filter(([key, value]) => key !== "printableSummary" && value)
@@ -86,7 +90,7 @@ function buildCampaignCalendar(
         3,
         "Facebook",
         "Local proof post",
-        brief.localDetails[0],
+        primaryLocalDetail,
         "Show local relevance",
         cta,
       ),
@@ -106,14 +110,7 @@ function buildCampaignCalendar(
         "Answer one common question",
         cta,
       ),
-      calendarEntry(
-        6,
-        "Facebook",
-        "Trust post",
-        brief.proofPoints[0],
-        "Share a clear proof point",
-        cta,
-      ),
+      calendarEntry(6, "Facebook", "Trust post", proof, "Share a clear proof point", cta),
       calendarEntry(
         7,
         "Facebook",
@@ -140,14 +137,7 @@ function buildCampaignCalendar(
         "Reinforce local service keywords",
         cta,
       ),
-      calendarEntry(
-        3,
-        "Facebook",
-        "Benefit post",
-        brief.proofPoints[0],
-        "Highlight one practical benefit",
-        cta,
-      ),
+      calendarEntry(3, "Facebook", "Benefit post", proof, "Highlight one practical benefit", cta),
       calendarEntry(
         4,
         "Google Business Profile",
@@ -168,7 +158,7 @@ function buildCampaignCalendar(
         6,
         "Google Business Profile",
         "Service availability",
-        brief.localDetails[0],
+        primaryLocalDetail,
         "Confirm service area and availability",
         cta,
       ),
@@ -205,7 +195,7 @@ function buildCampaignCalendar(
         3,
         "Local handout",
         "Share locally",
-        brief.localDetails[0],
+        primaryLocalDetail,
         "Place in community touchpoints",
         cta,
       ),
@@ -309,21 +299,14 @@ function buildCampaignCalendar(
     return [
       calendarEntry(1, "Website", "Publish heading", service, "Update service page heading", cta),
       calendarEntry(2, "Website", "Publish paragraph", theme, "Add short campaign paragraph", cta),
-      calendarEntry(
-        3,
-        "Website",
-        "Add bullets",
-        brief.proofPoints[0],
-        "Insert practical benefit bullets",
-        cta,
-      ),
+      calendarEntry(3, "Website", "Add bullets", proof, "Insert practical benefit bullets", cta),
       calendarEntry(4, "Website", "CTA check", cta, "Confirm CTA appears clearly above fold", cta),
       calendarEntry(5, "Website", "Internal link", service, "Link from homepage or key page", cta),
       calendarEntry(
         6,
         "Website",
         "Mobile review",
-        brief.localDetails[0],
+        primaryLocalDetail,
         "Check mobile readability",
         cta,
       ),
@@ -397,6 +380,9 @@ export function generateKit(
     : `${brief.businessName} serving local customers`;
   const proof = brief.proofPoints[0] || "Serving local customers with practical, friendly service";
   const secondProof = brief.proofPoints[1] || "Clear next steps before booking";
+  const primaryLocalDetail =
+    brief.localDetails[0] ||
+    (brief.serviceArea ? `Serving ${brief.serviceArea}` : "Serving local customers");
   const cta = brief.callToAction;
   const isContractor = /(contract|repair|renov|handyman|home service|maintenance)/i.test(
     brief.businessType,
@@ -429,7 +415,7 @@ export function generateKit(
         label: "Service detail",
         text: composeBlock([
           `${service} for ${brief.targetCustomer}.`,
-          brief.localDetails[0] || locationLine,
+          primaryLocalDetail,
           proof,
           cta,
         ]),
@@ -563,7 +549,7 @@ export function generateKit(
     adCopy: {
       headline: words(brief.mainOffer || `${service} ${localPhrase(brief.serviceArea)}`, 8),
       primary: words(line([`${brief.businessName}`, offerLine, proof, cta]), 60),
-      description: words(line([brief.localDetails[0], secondProof]), 20),
+      description: words(line([primaryLocalDetail, secondProof]), 20),
       ctaButton: /call/i.test(cta) ? "Call Now" : /message/i.test(cta) ? "Message Us" : "Book Now",
     },
     emailNewsletter: {
