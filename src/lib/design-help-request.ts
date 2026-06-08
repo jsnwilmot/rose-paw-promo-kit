@@ -1,4 +1,4 @@
-import { APP_DOMAIN, WEB3FORMS_ACCESS_KEY } from "./app-config";
+import { APP_DOMAIN } from "./app-config";
 import type { AppSettings, BusinessProfile, PromoKit } from "./storage";
 import { resolveSelectedOutputs, selectedOutputLabels } from "./output-selection";
 
@@ -228,7 +228,7 @@ export function buildDesignHelpRequestPackage({
 }
 
 export function buildDesignHelpFormData(
-  args: BuildRequestPackageArgs & { message: string },
+  args: BuildRequestPackageArgs & { message: string; accessKey: string; honeypot?: string },
 ): FormData {
   const requestPackage = buildDesignHelpRequestPackage(args);
   const { businessProfile, promoKit } = requestPackage;
@@ -236,7 +236,8 @@ export function buildDesignHelpFormData(
   const businessName = businessProfile.businessName || promoKit.businessName || "Unnamed business";
 
   const fields: Record<string, string> = {
-    access_key: WEB3FORMS_ACCESS_KEY,
+    access_key: args.accessKey.trim(),
+    botcheck: (args.honeypot || "").trim(),
     name: requestPackage.requester.name,
     email: requestPackage.requester.email,
     subject: `Rose & Paw Design Help Request - ${businessName} - ${promoKit.campaignName}`,

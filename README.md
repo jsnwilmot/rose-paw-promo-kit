@@ -39,6 +39,26 @@ The internal Requests page can import that structured package later. Imported pa
 create a new local kit ID, ignore raw logo data, and never replace the active profile without
 explicit confirmation.
 
+### Static submission security note
+
+Design Help Request submission is currently static-only and sends directly to Web3Forms from the
+browser. Configure the key with `VITE_WEB3FORMS_ACCESS_KEY` in a local `.env` file (see
+`.env.example`).
+
+Because this is static hosting, the Web3Forms key is included in the client bundle and is not
+secret. Current static-only mitigations are:
+
+- Hidden honeypot field (`botcheck`) blocks obvious bot submissions.
+- Client-side cooldown limits repeated submissions from one browser to one request per 60 seconds.
+- Required-field validation and trimmed values run before submission.
+- Base64 logo data is not submitted.
+
+If `VITE_WEB3FORMS_ACCESS_KEY` is missing, sending is disabled gracefully and users can still copy
+the readable message and download the JSON request package.
+
+Future hardening (post-MVP) should move request submission through a server-side proxy, keep the
+Web3Forms key server-only, add IP-based rate limiting, and enforce origin checks.
+
 ## Development
 
 Requirements: Node.js and npm.
@@ -49,6 +69,8 @@ npm run dev
 npm run lint
 npm run build
 ```
+
+Create `.env` from `.env.example` and set `VITE_WEB3FORMS_ACCESS_KEY` for live request sending.
 
 Use `npm run preview` to serve a production build locally.
 

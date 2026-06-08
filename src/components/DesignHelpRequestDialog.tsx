@@ -22,7 +22,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { WEB3FORMS_ENDPOINT } from "@/lib/app-config";
+import {
+  HAS_WEB3FORMS_ACCESS_KEY,
+  WEB3FORMS_ACCESS_KEY,
+  WEB3FORMS_ENDPOINT,
+} from "@/lib/app-config";
 import {
   buildDesignHelpFormData,
   buildDesignHelpMessage,
@@ -33,6 +37,8 @@ import {
 import { loadKits, type AppSettings, type BusinessProfile, type PromoKit } from "@/lib/storage";
 
 type SubmitState = "idle" | "sending" | "success" | "error";
+const DESIGN_HELP_COOLDOWN_MS = 60_000;
+const DESIGN_HELP_COOLDOWN_KEY = "rp.design-help-last-submitted-at";
 
 export function DesignHelpRequestDialog({
   currentKit,
@@ -54,6 +60,8 @@ export function DesignHelpRequestDialog({
   const [requestCreatedAt, setRequestCreatedAt] = useState("");
   const [consent, setConsent] = useState(false);
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
+  const [submitError, setSubmitError] = useState("");
+  const [honeypot, setHoneypot] = useState("");
 
   function makeMessage({
     kit = selectedKit,
@@ -100,6 +108,8 @@ export function DesignHelpRequestDialog({
       }),
     );
     setConsent(false);
+    setSubmitError("");
+    setHoneypot("");
     setSubmitState("idle");
   }
 
@@ -126,14 +136,21 @@ export function DesignHelpRequestDialog({
     setSubmitState("idle");
   }
 
-  const emailLooksValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const trimmedName = name.trim();
+  const trimmedEmail = email.trim();
+  const trimmedMessage = message.trim();
+  const trimmedCustomNotes = customNotes.trim();
+  const trimmedServices = selectedServices.map((service) => service.trim()).filter(Boolean);
+  const emailLooksValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
+  const web3FormsReady = HAS_WEB3FORMS_ACCESS_KEY;
   const canSubmit =
-    !!name.trim() &&
+    !!trimmedName &&
     emailLooksValid &&
     !!selectedKit?.id &&
-    selectedServices.length > 0 &&
-    !!message.trim() &&
+    trimmedServices.length > 0 &&
+    !!trimmedMessage &&
     consent &&
+    web3FormsReady &&
     submitState !== "sending";
 
   function packageArgs() {
@@ -141,12 +158,18 @@ export function DesignHelpRequestDialog({
       kit: selectedKit,
       profile,
       settings,
-      selectedServices,
-      customNotes,
-      requesterName: name,
-      requesterEmail: email,
+      selectedServices: trimmedServices,
+      customNotes: trimmedCustomNotes,
+      requesterName: trimmedName,
+      requesterEmail: trimmedEmail,
       createdAt: requestCreatedAt,
     };
+  }
+
+  function cooldownRemainingMs() {
+    const lastSubmittedAt = Number(localStorage.getItem(DESIGN_HELP_COOLDOWN_KEY) || "0");
+    if (!lastSubmittedAt) return 0;
+    return Math.max(0, lastSubmittedAt + DESIGN_HELP_COOLDOWN_MS - Date.now());
   }
 
   function downloadPackage() {
@@ -161,18 +184,65 @@ export function DesignHelpRequestDialog({
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
+    setSubmitError("");
+
+    if (!web3FormsReady) {
+      setSubmitState("error");
+      setSubmitError(
+        "Request sending is not configured right now. Use copy or JSON download instead.",
+      );
+      return;
+    }
+
+    if (honeypot.trim()) {
+      setSubmitState("error");
+      setSubmitError("The request could not be sent. Please try again.");
+      return;
+    }
+
+    if (
+      !trimmedName ||
+      !emailLooksValid ||
+      !selectedKit?.id ||
+      !trimmedServices.length ||
+      !trimmedMessage ||
+      !consent
+    ) {
+      setSubmitState("error");
+      setSubmitError("Please complete all required fields before sending.");
+      return;
+    }
+
+    const cooldownMs = cooldownRemainingMs();
+    if (cooldownMs > 0) {
+      setSubmitState("error");
+      setSubmitError(
+        `Please wait ${Math.ceil(cooldownMs / 1000)} seconds before sending another request.`,
+      );
+      return;
+    }
+
     if (!canSubmit) return;
     setSubmitState("sending");
     try {
       const response = await fetch(WEB3FORMS_ENDPOINT, {
         method: "POST",
-        body: buildDesignHelpFormData({ ...packageArgs(), message }),
+        body: buildDesignHelpFormData({
+          ...packageArgs(),
+          message: trimmedMessage,
+          accessKey: WEB3FORMS_ACCESS_KEY,
+          honeypot,
+        }),
       });
       const result = (await response.json()) as { success?: boolean };
       if (!response.ok || result.success === false) throw new Error("Submission failed");
+      localStorage.setItem(DESIGN_HELP_COOLDOWN_KEY, String(Date.now()));
       setSubmitState("success");
     } catch {
       setSubmitState("error");
+      setSubmitError(
+        "The request could not be sent. You can still copy the message and download the JSON package.",
+      );
     }
   }
 
@@ -206,7 +276,17 @@ export function DesignHelpRequestDialog({
             <Alert variant="destructive">
               <AlertTitle>Request not sent</AlertTitle>
               <AlertDescription>
-                The request could not be sent. You can still copy the message and email it manually.
+                {submitError ||
+                  "The request could not be sent. You can still copy the message and download the JSON package."}
+              </AlertDescription>
+            </Alert>
+          )}
+          {!web3FormsReady && (
+            <Alert>
+              <AlertTitle>Web3Forms key missing</AlertTitle>
+              <AlertDescription>
+                Sending is unavailable until VITE_WEB3FORMS_ACCESS_KEY is configured. Copy and JSON
+                download still work.
               </AlertDescription>
             </Alert>
           )}
@@ -308,6 +388,16 @@ export function DesignHelpRequestDialog({
               }}
             />
           </Field>
+
+          <input
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden="true"
+            name="botcheck"
+            value={honeypot}
+            onChange={(event) => setHoneypot(event.target.value)}
+            className="hidden"
+          />
 
           <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-muted/30 p-4 text-sm">
             <Checkbox

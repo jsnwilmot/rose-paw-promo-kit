@@ -88,3 +88,17 @@
 - Open the Design Help Request dialog and confirm its readable request message is generated.
 - Submit a Design Help Request through an intercepted or test Web3Forms request.
 - Confirm backup export and import still validate existing saved-kit data.
+
+## Static Web3Forms hardening
+
+- Confirm `src/lib/app-config.ts` does not hardcode a real Web3Forms key.
+- Confirm `.env.example` contains only a placeholder `VITE_WEB3FORMS_ACCESS_KEY` value.
+- Build with `VITE_WEB3FORMS_ACCESS_KEY` set and confirm Design Help Request can send normally.
+- Build without `VITE_WEB3FORMS_ACCESS_KEY` and confirm sending is disabled while copy/download
+  fallback actions still work.
+- Open dev tools, set the hidden `botcheck` field to a value, submit, and confirm request sending
+  is blocked with a generic failure message.
+- Submit one valid request, then submit again within 60 seconds and confirm cooldown blocking.
+- Confirm Design Help Request still sends readable plain-text email content and compact searchable
+  fields when valid.
+- Confirm no base64 logo data is posted in Web3Forms submission payloads.
